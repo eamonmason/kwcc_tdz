@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Stage {{ stage_number }} - {{ stage_name }} | KWCC TdZ 2026{% endblock %}
+
+{% block extra_head %}
+<style>
+    .sortable { cursor: pointer; user-select: none; }
+    .sortable:hover { background-color: rgba(0,0,0,0.05); }
+    .sortable::after { content: ' ⇅'; opacity: 0.3; }
+    .sortable.asc::after { content: ' ↑'; opacity: 1; }
+    .sortable.desc::after { content: ' ↓'; opacity: 1; }
+    .penalty-indicator { color: #dc3545; font-weight: bold; }
+    .penalty-row { background-color: rgba(220, 53, 69, 0.05); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stage-header">
+    <nav class="stage-nav">
+        {% if stage_number > 1 %}
+        <a href="stage_{{ stage_number - 1 }}.html" class="nav-prev">&larr; Stage {{ stage_number - 1 }}</a>
+        {% endif %}
+        {% if stage_number < 6 %}
+        <a href="stage_{{ stage_number + 1 }}.html" class="nav-next">Stage {{ stage_number + 1 }} &rarr;</a>
+        {% endif %}
+    </nav>
+
+    <h2>Stage {{ stage_number }}: {{ stage_name }}</h2>
+    <div class="stage-details">
+        <span class="route">{{ route }}</span>
+        <span class="distance">{{ distance_km }}km</span>
+        <span class="elevation">{{ elevation_m }}m elevation</span>
+    </div>
+
+    {% if is_provisional %}
+    <div class="status-banner provisional">
+        <span class="status-icon">&#9888;</span>
+        Provisional Results
+    </div>
+    {% endif %}
+</div>
+
+<div class="stage-results">
+    <section class="group-results" id="group-a">
+        <h3>Group A Results</h3>
+        {% if group_a_results %}
+        <div class="table-wrapper">
+            <table class="results-table sortable-table" id="table-group-a">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="position" data-type="number">Pos</th>
+                        <th class="sortable" data-sort="rider_name" data-type="string">Rider</th>
+                        <th class="sortable" data-sort="handicap_group" data-type="string">Handicap</th>
+                        <th class="sortable" data-sort="raw_time_seconds" data-type="number">Raw Time</th>
+                        <th class="sortable" data-sort="handicap_seconds" data-type="number">Handicap Adj</th>
+                        <th class="sortable" data-sort="penalty_seconds" data-type="number">Penalty</th>
+                        <th class="sortable" data-sort="adjusted_time_seconds" data-type="number">Adjusted Time</th>
+                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in group_a_results %}
+                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}"
+                        data-position="{{ result.position }}"
+                        data-rider_name="{{ result.rider_name }}"
+                        data-handicap_group="{{ result.handicap_group }}"
+                        data-raw_time_seconds="{{ result.raw_time_seconds }}"
+                        data-handicap_seconds="{{ result.handicap_seconds }}"
+                        data-penalty_seconds="{{ result.penalty_seconds }}"
+                        data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
+                        data-gap_to_leader="{{ result.gap_to_leader }}">
+                        <td class="position">
+                            {% if result.position == 1 %}
+                            <span class="medal gold">&#129351;</span>
+                            {% elif result.position == 2 %}
+                            <span class="medal silver">&#129352;</span>
+                            {% elif result.position == 3 %}
+                            <span class="medal bronze">&#129353;</span>
+                            {% else %}
+                            {{ result.position }}
+                            {% endif %}
+                        </td>
+                        <td class="rider-name">
+                            {{ result.rider_name }}
+                            {% if result.has_penalty %}
+                            <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
+                            {% endif %}
+                        </td>
+                        <td class="handicap">{{ result.handicap_group }}</td>
+                        <td class="time raw-time">
+                            {% if result.event_id %}
+                            <a href="https://zwiftpower.com/events.php?zid={{ result.event_id }}" target="_blank" title="View event on ZwiftPower">
+                                {{ result.raw_time_display }}
+                            </a>
+                            {% else %}
+                            {{ result.raw_time_display }}
+                            {% endif %}
+                        </td>
+                        <td class="time handicap-adj">{{ result.handicap_display }}</td>
+                        <td class="time penalty {% if result.has_penalty %}penalty-indicator{% endif %}">
+                            {{ result.penalty_display }}
+                            {% if result.penalty_reason %}
+                            <span class="penalty-tooltip" title="{{ result.penalty_reason }}">&#9432;</span>
+                            {% endif %}
+                        </td>
+                        <td class="time adjusted-time"><strong>{{ result.adjusted_time_display }}</strong></td>
+                        <td class="gap">{{ result.gap_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="results-count">{{ group_a_results|length }} riders completed</p>
+        {% else %}
+        <p class="no-results">No results yet for Group A</p>
+        {% endif %}
+    </section>
+
+    <section class="group-results" id="group-b">
+        <h3>Group B Results</h3>
+        {% if group_b_results %}
+        <div class="table-wrapper">
+            <table class="results-table sortable-table" id="table-group-b">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="position" data-type="number">Pos</th>
+                        <th class="sortable" data-sort="rider_name" data-type="string">Rider</th>
+                        <th class="sortable" data-sort="handicap_group" data-type="string">Handicap</th>
+                        <th class="sortable" data-sort="raw_time_seconds" data-type="number">Raw Time</th>
+                        <th class="sortable" data-sort="handicap_seconds" data-type="number">Handicap Adj</th>
+                        <th class="sortable" data-sort="penalty_seconds" data-type="number">Penalty</th>
+                        <th class="sortable" data-sort="adjusted_time_seconds" data-type="number">Adjusted Time</th>
+                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in group_b_results %}
+                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}"
+                        data-position="{{ result.position }}"
+                        data-rider_name="{{ result.rider_name }}"
+                        data-handicap_group="{{ result.handicap_group }}"
+                        data-raw_time_seconds="{{ result.raw_time_seconds }}"
+                        data-handicap_seconds="{{ result.handicap_seconds }}"
+                        data-penalty_seconds="{{ result.penalty_seconds }}"
+                        data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
+                        data-gap_to_leader="{{ result.gap_to_leader }}">
+                        <td class="position">
+                            {% if result.position == 1 %}
+                            <span class="medal gold">&#129351;</span>
+                            {% elif result.position == 2 %}
+                            <span class="medal silver">&#129352;</span>
+                            {% elif result.position == 3 %}
+                            <span class="medal bronze">&#129353;</span>
+                            {% else %}
+                            {{ result.position }}
+                            {% endif %}
+                        </td>
+                        <td class="rider-name">
+                            {{ result.rider_name }}
+                            {% if result.has_penalty %}
+                            <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
+                            {% endif %}
+                        </td>
+                        <td class="handicap">{{ result.handicap_group }}</td>
+                        <td class="time raw-time">
+                            {% if result.event_id %}
+                            <a href="https://zwiftpower.com/events.php?zid={{ result.event_id }}" target="_blank" title="View event on ZwiftPower">
+                                {{ result.raw_time_display }}
+                            </a>
+                            {% else %}
+                            {{ result.raw_time_display }}
+                            {% endif %}
+                        </td>
+                        <td class="time handicap-adj">{{ result.handicap_display }}</td>
+                        <td class="time penalty {% if result.has_penalty %}penalty-indicator{% endif %}">
+                            {{ result.penalty_display }}
+                            {% if result.penalty_reason %}
+                            <span class="penalty-tooltip" title="{{ result.penalty_reason }}">&#9432;</span>
+                            {% endif %}
+                        </td>
+                        <td class="time adjusted-time"><strong>{{ result.adjusted_time_display }}</strong></td>
+                        <td class="gap">{{ result.gap_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="results-count">{{ group_b_results|length }} riders completed</p>
+        {% else %}
+        <p class="no-results">No results yet for Group B</p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="penalty-legend">
+    <h4>Penalty Information</h4>
+    <p>
+        <span class="penalty-indicator">*</span> indicates riders who rode a penalty event.
+        Monday 5pm and 6pm UTC events carry a time penalty.
+    </p>
+    <p>
+        <strong>Adjusted Time</strong> = Raw Time + Handicap + Penalty
+    </p>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Sortable table functionality
+document.querySelectorAll('.sortable-table').forEach(table => {
+    const headers = table.querySelectorAll('th.sortable');
+
+    headers.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortKey = header.dataset.sort;
+            const sortType = header.dataset.type;
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            // Determine sort direction
+            const isAsc = header.classList.contains('asc');
+
+            // Clear all sort indicators
+            headers.forEach(h => h.classList.remove('asc', 'desc'));
+
+            // Set new sort direction
+            header.classList.add(isAsc ? 'desc' : 'asc');
+
+            // Sort rows
+            rows.sort((a, b) => {
+                let aVal = a.dataset[sortKey];
+                let bVal = b.dataset[sortKey];
+
+                if (sortType === 'number') {
+                    aVal = parseFloat(aVal) || 0;
+                    bVal = parseFloat(bVal) || 0;
+                }
+
+                if (aVal < bVal) return isAsc ? 1 : -1;
+                if (aVal > bVal) return isAsc ? -1 : 1;
+                return 0;
+            });
+
+            // Reorder DOM
+            rows.forEach(row => tbody.appendChild(row));
+        });
+    });
+});
+</script>
+{% endblock %}

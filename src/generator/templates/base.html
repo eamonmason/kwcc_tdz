@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KWCC {{ tour_name|default('Tour de Zwift 2026') }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_prefix|default('') }}css/styles.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <h1 class="site-title">
+                <a href="{{ url_prefix|default('') }}index.html">KWCC {{ tour_name|default('Tour de Zwift 2026') }}</a>
+            </h1>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="{{ url_prefix|default('') }}index.html">Home</a></li>
+                    <li><a href="{{ url_prefix|default('') }}gc.html">GC Standings</a></li>
+                    {% for stage_num in range(1, 7) %}
+                    <li><a href="{{ url_prefix|default('') }}stage_{{ stage_num }}.html">Stage {{ stage_num }}</a></li>
+                    {% endfor %}
+                    {% if available_years and available_years|length > 1 %}
+                    <li class="dropdown">
+                        <span class="dropdown-toggle">Archives ▼</span>
+                        <ul class="dropdown-menu">
+                            {% for year in available_years %}
+                            <li><a href="/archive/tdz-{{ year }}/index.html">{{ year }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    {% if is_mock_data %}
+    <div class="mock-data-banner">
+        ⚠️ MOCK DATA - This is sample data for testing purposes. Real ZwiftPower data not loaded.
+    </div>
+    {% endif %}
+
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>
+                {% if last_updated %}
+                Last updated: {{ last_updated }}
+                {% endif %}
+                {% if is_provisional %}
+                <span class="provisional-badge">PROVISIONAL</span>
+                {% endif %}
+            </p>
+            <p class="footer-links">
+                <a href="https://zwiftpower.com" target="_blank">ZwiftPower</a> |
+                <a href="https://www.zwift.com/tour-de-zwift" target="_blank">Tour de Zwift</a>
+            </p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}GC Standings | KWCC Tour de Zwift 2026{% endblock %}
+
+{% block content %}
+<div class="gc-header">
+    <h2>General Classification</h2>
+    <p class="gc-subtitle">
+        {{ completed_stages }} of 6 stages completed
+        {% if is_provisional %}
+        <span class="provisional-badge">PROVISIONAL</span>
+        {% endif %}
+    </p>
+</div>
+
+<div class="gc-standings">
+    <section class="group-gc" id="group-a">
+        <h3>Group A - GC</h3>
+        {% if group_a.standings %}
+        <div class="table-wrapper">
+            <table class="results-table gc-table">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Rider</th>
+                        <th>Handicap</th>
+                        <th>Total Time</th>
+                        <th>Gap</th>
+                        {% for stage_num in range(1, 7) %}
+                        <th class="stage-col">S{{ stage_num }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for standing in group_a.standings %}
+                    <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
+                        <td class="position">
+                            {% if standing.position == 1 %}
+                            <span class="medal gold">&#129351;</span>
+                            {% elif standing.position == 2 %}
+                            <span class="medal silver">&#129352;</span>
+                            {% elif standing.position == 3 %}
+                            <span class="medal bronze">&#129353;</span>
+                            {% else %}
+                            {{ standing.position }}
+                            {% endif %}
+                        </td>
+                        <td class="rider-name">{{ standing.rider_name }}</td>
+                        <td class="handicap">{{ standing.handicap_group }}</td>
+                        <td class="time total-time">{{ standing.total_time_display }}</td>
+                        <td class="gap">{{ standing.gap_display }}</td>
+                        {% for stage_num in range(1, 7) %}
+                        <td class="stage-time">{{ standing.get_stage_time_display(stage_num) }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="results-count">
+            {{ group_a.standings|length }} riders in GC
+            (completed all {{ completed_stages }} stages)
+        </p>
+        {% else %}
+        <p class="no-results">
+            No riders have completed all stages yet.
+            <br>
+            Riders must complete ALL stages to appear in the GC standings.
+        </p>
+        {% endif %}
+    </section>
+
+    <section class="group-gc" id="group-b">
+        <h3>Group B - GC</h3>
+        {% if group_b.standings %}
+        <div class="table-wrapper">
+            <table class="results-table gc-table">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Rider</th>
+                        <th>Handicap</th>
+                        <th>Total Time</th>
+                        <th>Gap</th>
+                        {% for stage_num in range(1, 7) %}
+                        <th class="stage-col">S{{ stage_num }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for standing in group_b.standings %}
+                    <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
+                        <td class="position">
+                            {% if standing.position == 1 %}
+                            <span class="medal gold">&#129351;</span>
+                            {% elif standing.position == 2 %}
+                            <span class="medal silver">&#129352;</span>
+                            {% elif standing.position == 3 %}
+                            <span class="medal bronze">&#129353;</span>
+                            {% else %}
+                            {{ standing.position }}
+                            {% endif %}
+                        </td>
+                        <td class="rider-name">{{ standing.rider_name }}</td>
+                        <td class="handicap">{{ standing.handicap_group }}</td>
+                        <td class="time total-time">{{ standing.total_time_display }}</td>
+                        <td class="gap">{{ standing.gap_display }}</td>
+                        {% for stage_num in range(1, 7) %}
+                        <td class="stage-time">{{ standing.get_stage_time_display(stage_num) }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="results-count">
+            {{ group_b.standings|length }} riders in GC
+            (completed all {{ completed_stages }} stages)
+        </p>
+        {% else %}
+        <p class="no-results">
+            No riders have completed all stages yet.
+            <br>
+            Riders must complete ALL stages to appear in the GC standings.
+        </p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="gc-rules">
+    <h4>GC Rules</h4>
+    <ul>
+        <li>Riders must complete <strong>ALL</strong> stages to appear in GC standings</li>
+        <li>Times are adjusted by adding handicap to raw finish time</li>
+        <li>GC is the sum of adjusted times across all stages</li>
+        <li>Results marked as PROVISIONAL may still change</li>
+    </ul>
+</section>
+{% endblock %}

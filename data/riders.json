@@ -1,0 +1,544 @@
+{
+  "riders": [
+    {
+      "name": "Adam Currie",
+      "zwiftpower_id": "4037257",
+      "handicap_group": "B1",
+      "zp_racing_score": 234,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "Judah Rand",
+      "zwiftpower_id": "1980385",
+      "handicap_group": "A1",
+      "zp_racing_score": 867,
+      "race_group": "A",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Tom Kennett",
+      "zwiftpower_id": "997635",
+      "handicap_group": "A1",
+      "zp_racing_score": 750,
+      "race_group": "A",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Bill McClatchie",
+      "zwiftpower_id": "176214",
+      "handicap_group": "A3",
+      "zp_racing_score": 521,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Tom Bagley",
+      "zwiftpower_id": "783382",
+      "handicap_group": "B3",
+      "zp_racing_score": 226,
+      "race_group": "B",
+      "handicap_seconds": 240,
+      "handicap_display": "+4 min"
+    },
+    {
+      "name": "Patricia",
+      "zwiftpower_id": "79686",
+      "handicap_group": "B4",
+      "zp_racing_score": null,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Seb Ashton",
+      "zwiftpower_id": "1593379",
+      "handicap_group": "A1",
+      "zp_racing_score": 780,
+      "race_group": "A",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Luke Fenney",
+      "zwiftpower_id": "4133611",
+      "handicap_group": "B3",
+      "zp_racing_score": 230,
+      "race_group": "B",
+      "handicap_seconds": 240,
+      "handicap_display": "+4 min"
+    },
+    {
+      "name": "Chris Jenkins",
+      "zwiftpower_id": "2456208",
+      "handicap_group": "A2",
+      "zp_racing_score": 742,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Harvey J",
+      "zwiftpower_id": "5143299",
+      "handicap_group": "B3",
+      "zp_racing_score": 243,
+      "race_group": "B",
+      "handicap_seconds": 240,
+      "handicap_display": "+4 min"
+    },
+    {
+      "name": "Matt de Freitas",
+      "zwiftpower_id": "592873",
+      "handicap_group": "A2",
+      "zp_racing_score": 697,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Martyn Hopping",
+      "zwiftpower_id": "706725",
+      "handicap_group": "B3",
+      "zp_racing_score": 251,
+      "race_group": "B",
+      "handicap_seconds": 240,
+      "handicap_display": "+4 min"
+    },
+    {
+      "name": "Richard Halls",
+      "zwiftpower_id": "822698",
+      "handicap_group": "A3",
+      "zp_racing_score": 516,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Alex Robertson",
+      "zwiftpower_id": "752337",
+      "handicap_group": "A3",
+      "zp_racing_score": 600,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Matt Wynn",
+      "zwiftpower_id": "2868420",
+      "handicap_group": "B3",
+      "zp_racing_score": 243,
+      "race_group": "B",
+      "handicap_seconds": 240,
+      "handicap_display": "+4 min"
+    },
+    {
+      "name": "James Armitage-Hobbs",
+      "zwiftpower_id": "6219076",
+      "handicap_group": "A3",
+      "zp_racing_score": 399,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Eamon Mason",
+      "zwiftpower_id": "1231961",
+      "handicap_group": "A3",
+      "zp_racing_score": 542,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Conor Walsh",
+      "zwiftpower_id": "2112619",
+      "handicap_group": "A1",
+      "zp_racing_score": 800,
+      "race_group": "A",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "\u2018Real\u2019 Neal Beauchamp",
+      "zwiftpower_id": "3427131",
+      "handicap_group": "A2",
+      "zp_racing_score": 467,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Russell Beard",
+      "zwiftpower_id": "5428406",
+      "handicap_group": "B2",
+      "zp_racing_score": 322,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Peter King",
+      "zwiftpower_id": "354568",
+      "handicap_group": "B4",
+      "zp_racing_score": 107,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "James Turner",
+      "zwiftpower_id": "1098357",
+      "handicap_group": "B4",
+      "zp_racing_score": 216,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Gareth Edwards",
+      "zwiftpower_id": "1746490",
+      "handicap_group": "B2",
+      "zp_racing_score": 263,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Henrik Persson",
+      "zwiftpower_id": "70139",
+      "handicap_group": "A2",
+      "zp_racing_score": 621,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Neil Grunshaw",
+      "zwiftpower_id": "43909",
+      "handicap_group": "A2",
+      "zp_racing_score": 622,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Tom Herbert",
+      "zwiftpower_id": "181941",
+      "handicap_group": "A2",
+      "zp_racing_score": 622,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Mark Stancombe",
+      "zwiftpower_id": "1398520",
+      "handicap_group": "B3",
+      "zp_racing_score": 241,
+      "race_group": "B",
+      "handicap_seconds": 240,
+      "handicap_display": "+4 min"
+    },
+    {
+      "name": "Sean Haywood",
+      "zwiftpower_id": "866960",
+      "handicap_group": "B1",
+      "zp_racing_score": 475,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "\u2018Dirty\u2019 Denis Whelan",
+      "zwiftpower_id": "1829294",
+      "handicap_group": "A2",
+      "zp_racing_score": 623,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Alex Wilson-Jones",
+      "zwiftpower_id": "6270791",
+      "handicap_group": "B2",
+      "zp_racing_score": 290,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Joe Barrett",
+      "zwiftpower_id": "1410483",
+      "handicap_group": "B1",
+      "zp_racing_score": 471,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "Rich Southcott",
+      "zwiftpower_id": "7104754",
+      "handicap_group": "B1",
+      "zp_racing_score": 460,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "David Willis",
+      "zwiftpower_id": "403",
+      "handicap_group": "B1",
+      "zp_racing_score": 387,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "Gordon Reid",
+      "zwiftpower_id": "2140127",
+      "handicap_group": "A3",
+      "zp_racing_score": 484,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Jeremy Sharpe",
+      "zwiftpower_id": "416866",
+      "handicap_group": "B2",
+      "zp_racing_score": 322,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Marcus Jones",
+      "zwiftpower_id": "3014509",
+      "handicap_group": "A2",
+      "zp_racing_score": 657,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Tobi Rosenkranz",
+      "zwiftpower_id": "1831008",
+      "handicap_group": "A2",
+      "zp_racing_score": 680,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Nick Dumonde",
+      "zwiftpower_id": "106536",
+      "handicap_group": "B2",
+      "zp_racing_score": 332,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Simon White",
+      "zwiftpower_id": "5491001",
+      "handicap_group": "B2",
+      "zp_racing_score": 303,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Luke Benfield",
+      "zwiftpower_id": "2950208",
+      "handicap_group": "B1",
+      "zp_racing_score": 448,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "David Goddard",
+      "zwiftpower_id": "85470",
+      "handicap_group": "B1",
+      "zp_racing_score": 465,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "Alex Tate",
+      "zwiftpower_id": "517329",
+      "handicap_group": "A3",
+      "zp_racing_score": 520,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Paul Davey",
+      "zwiftpower_id": "3501995",
+      "handicap_group": "B1",
+      "zp_racing_score": 445,
+      "race_group": "B",
+      "handicap_seconds": 900,
+      "handicap_display": "+15 min"
+    },
+    {
+      "name": "Justin Goold",
+      "zwiftpower_id": "283766",
+      "handicap_group": "B2",
+      "zp_racing_score": 300,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Raif Oz",
+      "zwiftpower_id": "3396664",
+      "handicap_group": "A1",
+      "zp_racing_score": 770,
+      "race_group": "A",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Chris Croft",
+      "zwiftpower_id": "432420",
+      "handicap_group": "B2",
+      "zp_racing_score": 238,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "\u2018Funking Baxter\u2019",
+      "zwiftpower_id": "7993203",
+      "handicap_group": "B4",
+      "zp_racing_score": 87,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Rupert Gordon-Watkins",
+      "zwiftpower_id": "3571563",
+      "handicap_group": "A3",
+      "zp_racing_score": 367,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "David Griffiths",
+      "zwiftpower_id": "2488241",
+      "handicap_group": "B2",
+      "zp_racing_score": 311,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "James Bowden",
+      "zwiftpower_id": "981999",
+      "handicap_group": "A3",
+      "zp_racing_score": 478,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "David Wong",
+      "zwiftpower_id": "1829569",
+      "handicap_group": "A3",
+      "zp_racing_score": 536,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Richard Harrison",
+      "zwiftpower_id": "2887354",
+      "handicap_group": "B2",
+      "zp_racing_score": 313,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Alexandra Chuchu",
+      "zwiftpower_id": "662621",
+      "handicap_group": "B4",
+      "zp_racing_score": 163,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Phoebe Macwhinnie",
+      "zwiftpower_id": "7854174",
+      "handicap_group": "B4",
+      "zp_racing_score": 157,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Rob Cherry",
+      "zwiftpower_id": "8000972",
+      "handicap_group": "B2",
+      "zp_racing_score": null,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Olly Wright",
+      "zwiftpower_id": "751201",
+      "handicap_group": "A3",
+      "zp_racing_score": 477,
+      "race_group": "A",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Hans Stiles",
+      "zwiftpower_id": "552548",
+      "handicap_group": "B2",
+      "zp_racing_score": 360,
+      "race_group": "B",
+      "handicap_seconds": 600,
+      "handicap_display": "+10 min"
+    },
+    {
+      "name": "Jonny Bodey",
+      "zwiftpower_id": "4658391",
+      "handicap_group": "A2",
+      "zp_racing_score": 406,
+      "race_group": "A",
+      "handicap_seconds": 300,
+      "handicap_display": "+5 min"
+    },
+    {
+      "name": "Alessandra Scaduto",
+      "zwiftpower_id": "1628435",
+      "handicap_group": "B4",
+      "zp_racing_score": 189,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    },
+    {
+      "name": "Peter Lyons",
+      "zwiftpower_id": "2133814",
+      "handicap_group": "B4",
+      "zp_racing_score": 531,
+      "race_group": "B",
+      "handicap_seconds": 0,
+      "handicap_display": "scratch"
+    }
+  ]
+}

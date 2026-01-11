@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}KWCC Tour de Zwift 2026 - Home{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h2>Tour de Zwift 2026</h2>
+    <p class="tour-dates">January 5 - February 22, 2026</p>
+    {% if is_provisional %}
+    <div class="status-banner provisional">
+        <span class="status-icon">&#9888;</span>
+        Provisional Results - Stage {{ current_stage }} in progress
+    </div>
+    {% else %}
+    <div class="status-banner final">
+        <span class="status-icon">&#10003;</span>
+        Final Results
+    </div>
+    {% endif %}
+</div>
+
+<section class="stages-overview">
+    <h3>Stage Overview</h3>
+    <div class="stages-grid">
+        {% for stage in stages %}
+        <a href="stage_{{ stage.number }}.html" class="stage-card {% if stage.is_active %}active{% elif stage.is_complete %}complete{% else %}upcoming{% endif %}">
+            <div class="stage-number">Stage {{ stage.number }}</div>
+            <div class="stage-name">{{ stage.name }}</div>
+            <div class="stage-route">{{ stage.route }}</div>
+            <div class="stage-info">{{ stage.distance_km }}km | {{ stage.elevation_m }}m</div>
+            {% if stage.is_active %}
+            <span class="stage-status">IN PROGRESS</span>
+            {% elif stage.is_complete %}
+            <span class="stage-status">COMPLETE</span>
+            {% else %}
+            <span class="stage-status">{{ stage.start_date }}</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<div class="gc-summary">
+    <section class="group-standings">
+        <h3>Group A - GC Standings</h3>
+        {% if group_a.standings %}
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Rider</th>
+                    <th>Handicap</th>
+                    <th>Total Time</th>
+                    <th>Gap</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for standing in group_a.standings[:10] %}
+                <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
+                    <td class="position">{{ standing.position }}</td>
+                    <td class="rider-name">{{ standing.rider_name }}</td>
+                    <td class="handicap">{{ standing.handicap_group }}</td>
+                    <td class="time">{{ standing.total_time_display }}</td>
+                    <td class="gap">{{ standing.gap_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if group_a.standings|length > 10 %}
+        <p class="view-all"><a href="gc.html#group-a">View all {{ group_a.standings|length }} riders &rarr;</a></p>
+        {% endif %}
+        {% else %}
+        <p class="no-results">No riders have completed all stages yet</p>
+        {% endif %}
+    </section>
+
+    <section class="group-standings">
+        <h3>Group B - GC Standings</h3>
+        {% if group_b.standings %}
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Rider</th>
+                    <th>Handicap</th>
+                    <th>Total Time</th>
+                    <th>Gap</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for standing in group_b.standings[:10] %}
+                <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
+                    <td class="position">{{ standing.position }}</td>
+                    <td class="rider-name">{{ standing.rider_name }}</td>
+                    <td class="handicap">{{ standing.handicap_group }}</td>
+                    <td class="time">{{ standing.total_time_display }}</td>
+                    <td class="gap">{{ standing.gap_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if group_b.standings|length > 10 %}
+        <p class="view-all"><a href="gc.html#group-b">View all {{ group_b.standings|length }} riders &rarr;</a></p>
+        {% endif %}
+        {% else %}
+        <p class="no-results">No riders have completed all stages yet</p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="handicap-info">
+    <h3>Handicap System</h3>
+    <div class="handicap-tables">
+        <div class="handicap-group">
+            <h4>Group A</h4>
+            <table>
+                <tr><td>A1 (Fastest)</td><td>+10 minutes</td></tr>
+                <tr><td>A2</td><td>+5 minutes</td></tr>
+                <tr><td>A3 (Scratch)</td><td>+0 minutes</td></tr>
+            </table>
+        </div>
+        <div class="handicap-group">
+            <h4>Group B</h4>
+            <table>
+                <tr><td>B1 (Fastest)</td><td>+15 minutes</td></tr>
+                <tr><td>B2</td><td>+10 minutes</td></tr>
+                <tr><td>B3</td><td>+4 minutes</td></tr>
+                <tr><td>B4 (Scratch)</td><td>+0 minutes</td></tr>
+            </table>
+        </div>
+    </div>
+    <p class="handicap-note">
+        <strong>GC Rule:</strong> Riders must complete ALL stages to appear in the GC standings.
+    </p>
+</section>
+{% endblock %}

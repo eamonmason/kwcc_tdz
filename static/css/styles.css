@@ -1,0 +1,641 @@
+/* KWCC Tour de Zwift 2026 - Stylesheet */
+
+/* Reset and base styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #ff6b00;
+    --secondary-color: #1a1a2e;
+    --accent-color: #16213e;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #f8f9fa;
+    --dark-bg: #1a1a2e;
+    --text-color: #333;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+    --bronze: #cd7f32;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    background-color: var(--light-bg);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Header */
+.site-header {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.site-title {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.site-title a {
+    color: white;
+    text-decoration: none;
+}
+
+.site-title a:hover {
+    color: var(--primary-color);
+}
+
+.main-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.main-nav a {
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.main-nav a:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Dropdown menu for archives */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.dropdown-toggle:hover {
+    color: white;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--secondary-color);
+    border-radius: 4px;
+    min-width: 120px;
+    padding: 0.5rem 0;
+    margin-top: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+    list-style: none;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu li {
+    padding: 0;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+}
+
+.dropdown-menu a:hover {
+    background-color: var(--accent-color);
+}
+
+/* Main content */
+.main-content {
+    padding: 2rem 0;
+    min-height: calc(100vh - 200px);
+}
+
+/* Hero section */
+.hero {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.hero h2 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--secondary-color);
+}
+
+.tour-dates {
+    color: var(--text-muted);
+    margin: 0.5rem 0;
+}
+
+/* Mock data warning banner */
+.mock-data-banner {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 10px rgba(220, 53, 69, 0.3);
+}
+
+/* Status banners */
+.status-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-top: 1rem;
+}
+
+.status-banner.provisional {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #856404;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-banner.final {
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #155724;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.provisional-badge {
+    display: inline-block;
+    background-color: var(--warning-color);
+    color: #856404;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 0.5rem;
+}
+
+/* Stages grid */
+.stages-overview {
+    margin-bottom: 2rem;
+}
+
+.stages-overview h3 {
+    margin-bottom: 1rem;
+}
+
+.stages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.stage-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    text-decoration: none;
+    color: var(--text-color);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+    border-left: 4px solid var(--border-color);
+}
+
+.stage-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stage-card.active {
+    border-left-color: var(--primary-color);
+    background: linear-gradient(135deg, white 0%, rgba(255, 107, 0, 0.05) 100%);
+}
+
+.stage-card.complete {
+    border-left-color: var(--success-color);
+}
+
+.stage-card.upcoming {
+    border-left-color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.stage-number {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.stage-name {
+    font-weight: 600;
+    margin: 0.25rem 0;
+}
+
+.stage-route {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.stage-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+.stage-status {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    font-weight: 600;
+}
+
+.active .stage-status { color: var(--primary-color); }
+.complete .stage-status { color: var(--success-color); }
+
+/* GC summary */
+.gc-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.group-standings {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.group-standings h3 {
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Results tables */
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.results-table th,
+.results-table td {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.results-table th {
+    background-color: var(--light-bg);
+    font-weight: 600;
+    color: var(--secondary-color);
+    white-space: nowrap;
+}
+
+.results-table tbody tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.results-table .position {
+    font-weight: 600;
+    width: 50px;
+}
+
+.results-table .rider-name {
+    font-weight: 500;
+}
+
+.results-table .time {
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+.results-table .gap {
+    color: var(--text-muted);
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+}
+
+.results-table .handicap {
+    color: var(--text-muted);
+}
+
+.top-three {
+    background-color: rgba(255, 215, 0, 0.05);
+}
+
+.medal {
+    font-size: 1.2rem;
+}
+
+.no-results {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+}
+
+.results-count {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 1rem;
+}
+
+.view-all {
+    text-align: right;
+    margin-top: 0.5rem;
+}
+
+.view-all a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.view-all a:hover {
+    text-decoration: underline;
+}
+
+/* Stage header */
+.stage-header {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stage-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.stage-nav a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.stage-nav a:hover {
+    text-decoration: underline;
+}
+
+.stage-header h2 {
+    margin: 0 0 0.5rem 0;
+}
+
+.stage-details {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Stage results */
+.stage-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+}
+
+.group-results {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.group-results h3 {
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* GC page */
+.gc-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.gc-subtitle {
+    color: var(--text-muted);
+}
+
+.gc-standings {
+    display: grid;
+    gap: 2rem;
+}
+
+.group-gc {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.gc-table .stage-col {
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.gc-table .stage-time {
+    text-align: center;
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+    font-size: 0.8rem;
+}
+
+.gc-rules {
+    background: var(--light-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.gc-rules h4 {
+    margin: 0 0 0.5rem 0;
+}
+
+.gc-rules ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.gc-rules li {
+    margin-bottom: 0.5rem;
+}
+
+/* Handicap info */
+.handicap-info {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.handicap-tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.handicap-group h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--secondary-color);
+}
+
+.handicap-group table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.handicap-group td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.handicap-group td:last-child {
+    text-align: right;
+    font-weight: 500;
+}
+
+.handicap-note {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255, 107, 0, 0.1);
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Penalty styles */
+.penalty-indicator {
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+.penalty-row {
+    background-color: rgba(220, 53, 69, 0.03) !important;
+}
+
+.penalty-tooltip {
+    cursor: help;
+    margin-left: 0.25rem;
+}
+
+.penalty-legend {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    margin-top: 2rem;
+}
+
+.penalty-legend h4 {
+    margin: 0 0 0.5rem 0;
+    color: #856404;
+}
+
+.penalty-legend p {
+    margin: 0.5rem 0;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+/* Footer */
+.site-footer {
+    background: var(--secondary-color);
+    color: rgba(255,255,255,0.7);
+    padding: 1.5rem 0;
+    margin-top: 3rem;
+    text-align: center;
+}
+
+.site-footer p {
+    margin: 0.25rem 0;
+}
+
+.footer-links a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.footer-links a:hover {
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .gc-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .stage-results {
+        grid-template-columns: 1fr;
+    }
+
+    .main-nav ul {
+        justify-content: center;
+    }
+
+    .stages-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .site-title {
+        font-size: 1.2rem;
+    }
+
+    .hero h2 {
+        font-size: 1.5rem;
+    }
+
+    .results-table {
+        font-size: 0.8rem;
+    }
+
+    .results-table th,
+    .results-table td {
+        padding: 0.5rem 0.25rem;
+    }
+}
