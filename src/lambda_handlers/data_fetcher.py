@@ -58,6 +58,18 @@ def load_event_ids_from_s3(bucket: str, key: str = "config/event_ids.json"):
         return {}
 
 
+def load_event_timestamps_from_s3(bucket: str, key: str = "config/event_timestamps.json"):
+    """Load event timestamps from S3 for penalty calculation."""
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        data = json.loads(response["Body"].read().decode("utf-8"))
+        # Convert string timestamps to datetime objects
+        return {k: datetime.fromisoformat(v) for k, v in data.items()}
+    except s3_client.exceptions.NoSuchKey:
+        logger.warning(f"Event timestamps file not found: s3://{bucket}/{key}")
+        return {}
+
+
 def save_results_to_s3(
     bucket: str,
     stage: int,
@@ -122,6 +134,7 @@ def handler(event, context):
             return {"statusCode": 500, "body": "No rider registry"}
 
         event_ids = load_event_ids_from_s3(data_bucket)
+        event_timestamps = load_event_timestamps_from_s3(data_bucket)
         tour_config = get_tour_config()
 
         # Get credentials
@@ -155,6 +168,7 @@ def handler(event, context):
                 stage_event_ids,
                 current_stage.number,
                 rider_registry,
+                event_timestamps,
             )
 
         logger.info(f"Fetched {len(race_results)} results")

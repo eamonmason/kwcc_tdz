@@ -254,6 +254,7 @@ def fetch_stage_results(
     event_ids: list[str],
     stage_number: int,
     rider_registry: RiderRegistry,
+    event_timestamps: dict[str, datetime] | None = None,
 ) -> list[RaceResult]:
     """
     Fetch results from multiple events for a stage.
@@ -263,6 +264,7 @@ def fetch_stage_results(
         event_ids: List of event IDs for the stage
         stage_number: Stage number
         rider_registry: Rider registry for filtering
+        event_timestamps: Optional dict mapping event_id to event start datetime
 
     Returns:
         Combined list of race results (best result per rider)
@@ -271,8 +273,13 @@ def fetch_stage_results(
 
     for event_id in event_ids:
         try:
+            # Get event timestamp for penalty calculation
+            event_timestamp = None
+            if event_timestamps:
+                event_timestamp = event_timestamps.get(event_id)
+
             results = fetch_event_results(
-                client, event_id, stage_number, rider_registry
+                client, event_id, stage_number, rider_registry, event_timestamp
             )
 
             # Keep best result per rider
