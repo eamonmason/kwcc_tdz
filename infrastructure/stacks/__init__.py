@@ -3,9 +3,11 @@
 from stacks.cdn_stack import CdnStack
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
+from stacks.github_actions_stack import GitHubActionsStack
 
 __all__ = [
     "DataStack",
     "ComputeStack",
     "CdnStack",
+    "GitHubActionsStack",
 ]

@@ -10,6 +10,8 @@ on:
 env:
   AWS_REGION: eu-west-1
   PYTHON_VERSION: "3.12"
+  # IAM role for GitHub Actions OIDC authentication
+  AWS_ROLE_ARN: arn:aws:iam::002681522526:role/kwcc-tdz-github-actions-prod
 
 jobs:
   lint:
@@ -68,7 +70,7 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
-      id-token: write
+      id-token: write   # Required for OIDC
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -86,12 +88,12 @@ jobs:
           uv sync --dev --extra cdk
           npm install -g aws-cdk
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          # No secrets needed - uses GitHub's OIDC token
 
       - name: CDK Synth
         working-directory: infrastructure
@@ -99,7 +101,9 @@ jobs:
 
       - name: CDK Deploy
         working-directory: infrastructure
-        run: cdk deploy --all --require-approval never
+        run: |
+          # Deploy application stacks (skip GitHubActionsStack - managed separately)
+          cdk deploy KwccTdzProdDataStack KwccTdzProdComputeStack --require-approval never
 
       - name: Invalidate CloudFront cache
         run: |

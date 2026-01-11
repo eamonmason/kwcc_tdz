@@ -5,6 +5,7 @@ import aws_cdk as cdk
 
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
+from stacks.github_actions_stack import GitHubActionsStack
 
 app = cdk.App()
 
@@ -16,7 +17,20 @@ env = cdk.Environment(
 # Get environment name from context or default to prod
 environment = app.node.try_get_context("environment") or "prod"
 
-# Create stacks in dependency order
+# GitHub repository configuration
+github_org = "eamonmason"
+github_repo = "kwcc_tdz"
+
+# 0. GitHub Actions IAM role (no dependencies, can be deployed independently)
+github_actions_stack = GitHubActionsStack(
+    app,
+    f"KwccTdz{environment.capitalize()}GitHubActionsStack",
+    env=env,
+    github_org=github_org,
+    github_repo=github_repo,
+    environment=environment,
+)
+
 # 1. Data stack - S3 buckets, Secrets Manager, and CloudFront CDN
 data_stack = DataStack(
     app,
