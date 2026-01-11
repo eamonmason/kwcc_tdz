@@ -48,8 +48,15 @@ htmlcov/
 # CDK
 cdk.out/
 
-# Data cache (generated)
-data/cache/
+# Data (local only)
+data/
+
+# Local test output
+local_test/
+
+# Source data files
+KW TDZ sign on 2026 - Sheet1.csv
+TDZ26 Handicap Groups.pptx
 
 # OS
 .DS_Store
