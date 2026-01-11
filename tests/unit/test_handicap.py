@@ -428,3 +428,121 @@ class TestGetBestResultPerRider:
     def test_empty_list(self):
         """Test empty list returns empty list."""
         assert get_best_result_per_rider([]) == []
+
+
+class TestProcessStageResultsWithMultipleRaces:
+    """Tests for process_stage_results with multiple races per rider."""
+
+    def test_penalty_affects_best_result_selection(self):
+        """
+        Test that penalties are considered when selecting best result.
+
+        Scenario (like Judah Rand):
+        - Monday 5pm race: 33:35 raw + 1 min penalty = 34:35 adjusted
+        - Monday 7pm race: 34:08 raw + 0 penalty = 34:08 adjusted
+        The 7pm race should be selected as best despite slower raw time.
+        """
+        rider = Rider(name="Judah Rand", zwiftpower_id="123", handicap_group="B4")
+        registry = RiderRegistry(riders=[rider])
+
+        # Two races from the same rider in different events
+        race_results = [
+            # Monday 5pm race - faster raw but with penalty
+            RaceResult(
+                rider_id="123",
+                rider_name="Judah Rand",
+                stage_number=1,
+                event_id="5215254",  # Monday 5pm event
+                raw_time_seconds=2015,  # 33:35
+                finish_position=1,
+                timestamp=datetime(2026, 1, 5, 17, 0, 0),  # Monday 5pm
+            ),
+            # Monday 7pm race - slower raw but no penalty
+            RaceResult(
+                rider_id="123",
+                rider_name="Judah Rand",
+                stage_number=1,
+                event_id="5215255",  # Monday 7pm event
+                raw_time_seconds=2048,  # 34:08
+                finish_position=1,
+                timestamp=datetime(2026, 1, 5, 19, 0, 0),  # Monday 7pm
+            ),
+        ]
+
+        group_a, group_b = process_stage_results(
+            race_results,
+            registry,
+            stage_number=1,
+            penalty_config=DEFAULT_PENALTY_CONFIG,
+        )
+
+        # B4 rider should be in group B
+        assert len(group_b) == 1
+        result = group_b[0]
+
+        # Should have selected the 7pm race (34:08) as best because
+        # 5pm race adjusted = 33:35 + 1min penalty = 34:35
+        # 7pm race adjusted = 34:08 + 0 penalty = 34:08
+        assert result.raw_time_seconds == 2048  # 34:08 from 7pm race
+        assert result.penalty_seconds == 0  # No penalty for 7pm
+        assert result.adjusted_time_seconds == 2048  # B4 has 0 handicap
+
+    def test_multiple_riders_with_multiple_races(self):
+        """Test multiple riders each with multiple race results."""
+        riders = [
+            Rider(name="Rider A", zwiftpower_id="1", handicap_group="A1"),
+            Rider(name="Rider B", zwiftpower_id="2", handicap_group="A2"),
+        ]
+        registry = RiderRegistry(riders=riders)
+
+        race_results = [
+            # Rider A - 5pm race (with penalty)
+            RaceResult(
+                rider_id="1",
+                rider_name="Rider A",
+                stage_number=1,
+                event_id="event1",
+                raw_time_seconds=2000,  # + 60s penalty = 2060 adjusted (+ handicap)
+                finish_position=1,
+                timestamp=datetime(2026, 1, 5, 17, 0, 0),
+            ),
+            # Rider A - 7pm race (no penalty) - should be selected
+            RaceResult(
+                rider_id="1",
+                rider_name="Rider A",
+                stage_number=1,
+                event_id="event2",
+                raw_time_seconds=2050,  # No penalty = 2050 adjusted (+ handicap)
+                finish_position=2,
+                timestamp=datetime(2026, 1, 5, 19, 0, 0),
+            ),
+            # Rider B - only one race
+            RaceResult(
+                rider_id="2",
+                rider_name="Rider B",
+                stage_number=1,
+                event_id="event1",
+                raw_time_seconds=2100,
+                finish_position=3,
+                timestamp=datetime(2026, 1, 5, 17, 0, 0),  # Has penalty
+            ),
+        ]
+
+        group_a, group_b = process_stage_results(
+            race_results,
+            registry,
+            stage_number=1,
+            penalty_config=DEFAULT_PENALTY_CONFIG,
+        )
+
+        assert len(group_a) == 2
+        assert len(group_b) == 0
+
+        # Find Rider A's result
+        rider_a_result = next(r for r in group_a if r.rider_id == "1")
+        assert rider_a_result.raw_time_seconds == 2050  # 7pm race selected
+        assert rider_a_result.penalty_seconds == 0
+
+        # Find Rider B's result
+        rider_b_result = next(r for r in group_a if r.rider_id == "2")
+        assert rider_b_result.penalty_seconds == 60  # Has penalty

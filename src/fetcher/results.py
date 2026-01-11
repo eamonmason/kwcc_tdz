@@ -264,9 +264,10 @@ def fetch_stage_results(
         event_timestamps: Optional dict mapping event_id to event start datetime
 
     Returns:
-        Combined list of race results (best result per rider)
+        Combined list of all race results (may include multiple per rider).
+        Best result selection should happen after penalties are applied.
     """
-    all_results: dict[str, RaceResult] = {}
+    all_results: list[RaceResult] = []
 
     for event_id in event_ids:
         try:
@@ -279,17 +280,14 @@ def fetch_stage_results(
                 client, event_id, stage_number, rider_registry, event_timestamp
             )
 
-            # Keep best result per rider
-            for result in results:
-                if (
-                    result.rider_id not in all_results
-                    or result.raw_time_seconds
-                    < all_results[result.rider_id].raw_time_seconds
-                ):
-                    all_results[result.rider_id] = result
+            # Keep all results - best selection happens after penalties are applied
+            all_results.extend(results)
 
         except Exception as e:
             logger.warning(f"Error fetching event {event_id}: {e}")
             continue
 
-    return list(all_results.values())
+    logger.info(
+        f"Fetched {len(all_results)} total results across {len(event_ids)} events"
+    )
+    return all_results

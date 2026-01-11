@@ -73,8 +73,12 @@ def process_stage_results(
     """
     Process race results into stage results with handicaps and penalties.
 
+    For riders with multiple results (e.g., from different events during the week),
+    keeps only their best result based on adjusted time (raw + handicap + penalty).
+    This ensures penalties are considered when determining a rider's fastest race.
+
     Args:
-        race_results: Raw race results from ZwiftPower
+        race_results: Raw race results from ZwiftPower (may include multiple per rider)
         rider_registry: Registry of all KWCC riders
         stage_number: Stage number being processed
         is_provisional: Whether results are still provisional
@@ -103,6 +107,10 @@ def process_stage_results(
             group_a_results.append(stage_result)
         else:
             group_b_results.append(stage_result)
+
+    # Keep only best result per rider (based on adjusted time including penalties)
+    group_a_results = get_best_result_per_rider(group_a_results)
+    group_b_results = get_best_result_per_rider(group_b_results)
 
     # Sort by adjusted time and calculate positions/gaps
     group_a_results = _calculate_positions_and_gaps(group_a_results)
