@@ -124,12 +124,18 @@ class WebsiteGenerator:
         Returns:
             Path to generated file
         """
+        # Get the next upcoming stage if any
+        upcoming = tour_config.upcoming_stages
+        next_stage = upcoming[0] if upcoming else None
+
         context = {
             "group_a": tour_standings.group_a,
             "group_b": tour_standings.group_b,
             "stages": tour_config.stages,
             "current_stage": tour_standings.current_stage,
             "is_provisional": tour_standings.is_provisional,
+            "is_stage_in_progress": tour_standings.is_stage_in_progress,
+            "next_stage": next_stage,
             "last_updated": tour_standings.last_updated,
         }
 

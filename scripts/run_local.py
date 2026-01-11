@@ -121,14 +121,14 @@ def generate_website_from_cache(output_dir: Path) -> tuple[list[Path] | None, bo
     active_stage = tour_config.current_stage
     if active_stage:
         current_stage = active_stage.number
+        is_stage_in_progress = True
     else:
-        # No active stage - use first upcoming or last completed
-        if tour_config.upcoming_stages:
-            current_stage = tour_config.upcoming_stages[0].number
-        elif tour_config.completed_stages:
+        # No active stage - use last completed
+        if tour_config.completed_stages:
             current_stage = tour_config.completed_stages[-1].number
         else:
             current_stage = 1
+        is_stage_in_progress = False
 
     # Count actual completed stages from tour config
     completed_stages = len(tour_config.completed_stages)
@@ -140,6 +140,7 @@ def generate_website_from_cache(output_dir: Path) -> tuple[list[Path] | None, bo
         completed_stages,
         current_stage,
         last_updated,
+        is_stage_in_progress,
     )
 
     print(
@@ -263,8 +264,9 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
         group_a_results,
         group_b_results,
         completed_stages=num_stages,
-        current_stage=min(num_stages + 1, 6),
+        current_stage=num_stages if num_stages > 0 else 1,
         last_updated=last_updated,
+        is_stage_in_progress=False,  # Mock data shows final results
     )
 
     print(

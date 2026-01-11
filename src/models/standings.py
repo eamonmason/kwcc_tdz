@@ -81,6 +81,10 @@ class TourStandings(BaseModel):
     group_b: GCStandings = Field(default_factory=lambda: GCStandings(race_group="B"))
     last_updated: str | None = Field(default=None)
     current_stage: int = Field(default=1, ge=1, le=6)
+    is_stage_in_progress: bool = Field(
+        default=False,
+        description="Whether a stage is currently active (based on stage dates)",
+    )
 
     @property
     def is_provisional(self) -> bool:

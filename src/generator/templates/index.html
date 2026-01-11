@@ -6,10 +6,15 @@
 <div class="hero">
     <h2>Tour de Zwift 2026</h2>
     <p class="tour-dates">January 5 - February 22, 2026</p>
-    {% if is_provisional %}
+    {% if is_stage_in_progress %}
     <div class="status-banner provisional">
         <span class="status-icon">&#9888;</span>
         Provisional Results - Stage {{ current_stage }} in progress
+    </div>
+    {% elif is_provisional %}
+    <div class="status-banner">
+        <span class="status-icon">&#10003;</span>
+        Stage {{ current_stage }} Complete{% if next_stage %} - Stage {{ next_stage.number }} starts {{ next_stage.start_date }}{% endif %}
     </div>
     {% else %}
     <div class="status-banner final">

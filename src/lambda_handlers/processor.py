@@ -147,9 +147,19 @@ def handler(event, context):  # noqa: ARG001
             f"{len(group_b_results)} stages with Group B"
         )
 
-        # Calculate completed stages
+        # Calculate completed stages based on data
         completed_stages = max(len(group_a_results), len(group_b_results))
-        current_stage = min(completed_stages + 1, 6)
+
+        # Determine current stage and provisional status from actual stage dates
+        active_stage = tour_config.current_stage
+        if active_stage:
+            # A stage is actively in progress
+            current_stage = active_stage.number
+            is_stage_in_progress = True
+        else:
+            # No stage currently active (between stages or tour complete)
+            current_stage = min(completed_stages, 6) if completed_stages > 0 else 1
+            is_stage_in_progress = False
 
         # Build tour standings
         last_updated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
@@ -159,6 +169,7 @@ def handler(event, context):  # noqa: ARG001
             completed_stages,
             current_stage,
             last_updated,
+            is_stage_in_progress,
         )
 
         # Generate website

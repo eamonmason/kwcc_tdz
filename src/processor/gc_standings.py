@@ -125,6 +125,7 @@ def build_tour_standings(
     completed_stages: int,
     current_stage: int = 1,
     last_updated: str | None = None,
+    is_stage_in_progress: bool = False,
 ) -> TourStandings:
     """
     Build complete tour standings for both groups.
@@ -135,6 +136,7 @@ def build_tour_standings(
         completed_stages: Number of completed stages
         current_stage: Current stage number
         last_updated: Timestamp of last update
+        is_stage_in_progress: Whether a stage is currently active
 
     Returns:
         TourStandings with both groups
@@ -162,4 +164,5 @@ def build_tour_standings(
         group_b=group_b,
         last_updated=last_updated,
         current_stage=current_stage,
+        is_stage_in_progress=is_stage_in_progress,
     )

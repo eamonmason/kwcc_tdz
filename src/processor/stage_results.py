@@ -136,8 +136,10 @@ class StageResultsManager:
         group_a_results, group_b_results = self.load_all_results()
         completed_stages = len(self.get_completed_stages())
 
-        # Determine current stage (highest completed + 1, capped at 6)
-        current_stage = min(completed_stages + 1, 6)
+        # Determine current stage from actual stage dates
+        # Note: This class doesn't have tour_config, so we'll use a conservative default
+        current_stage = min(completed_stages, 6) if completed_stages > 0 else 1
+        is_stage_in_progress = False  # Default to false without tour_config
 
         last_updated = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -147,4 +149,5 @@ class StageResultsManager:
             completed_stages,
             current_stage,
             last_updated,
+            is_stage_in_progress,
         )
