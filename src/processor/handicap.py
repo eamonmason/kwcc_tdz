@@ -66,7 +66,7 @@ def apply_handicap(
 def process_stage_results(
     race_results: list[RaceResult],
     rider_registry: RiderRegistry,
-    stage_number: int,
+    stage_number: int,  # noqa: ARG001
     is_provisional: bool = False,
     penalty_config: PenaltyConfig | None = None,
 ) -> tuple[list[StageResult], list[StageResult]]:
@@ -157,9 +157,7 @@ def get_best_result_per_rider(
 
     for result in results:
         rider_id = result.rider_id
-        if rider_id not in best_results:
-            best_results[rider_id] = result
-        elif result.adjusted_time_seconds < best_results[rider_id].adjusted_time_seconds:
+        if rider_id not in best_results or result.adjusted_time_seconds < best_results[rider_id].adjusted_time_seconds:
             best_results[rider_id] = result
 
     return list(best_results.values())

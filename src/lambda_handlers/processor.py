@@ -114,7 +114,7 @@ def invalidate_cloudfront(distribution_id: str) -> str | None:
         return None
 
 
-def handler(event, context):
+def handler(event, context):  # noqa: ARG001
     """
     Lambda handler for processing results and generating website.
 

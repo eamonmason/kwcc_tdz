@@ -7,10 +7,10 @@ from datetime import datetime
 
 import boto3
 
-from src.config import get_tour_config, load_riders_from_json
+from src.config import get_tour_config
 from src.fetcher import ZwiftPowerClient, fetch_stage_results
 from src.models import DEFAULT_PENALTY_CONFIG
-from src.processor import StageResultsManager, process_stage_results
+from src.processor import process_stage_results
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -111,7 +111,7 @@ def invoke_processor_lambda():
         return None
 
 
-def handler(event, context):
+def handler(event, context):  # noqa: ARG001
     """
     Lambda handler for fetching ZwiftPower results.
 
@@ -121,7 +121,6 @@ def handler(event, context):
     logger.info(f"Event: {json.dumps(event)}")
 
     data_bucket = os.environ.get("DATA_BUCKET", "")
-    website_bucket = os.environ.get("WEBSITE_BUCKET", "")
 
     if not data_bucket:
         raise ValueError("DATA_BUCKET not configured")

@@ -17,7 +17,7 @@ from src.models.tour import (
     TourRegistry,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # Rider models
     "Rider",
     "RiderRegistry",

@@ -2,7 +2,6 @@
 """CDK app entry point for KWCC TdZ infrastructure."""
 
 import aws_cdk as cdk
-
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
 from stacks.github_actions_stack import GitHubActionsStack

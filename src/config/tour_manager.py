@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from src.models.tour import TourConfig, TourRegistry, DEFAULT_TOUR_REGISTRY
+from src.models.tour import DEFAULT_TOUR_REGISTRY, TourConfig, TourRegistry
 
 
 def load_tour_registry_from_json(json_path: str | Path) -> TourRegistry:
@@ -85,7 +85,7 @@ def create_new_tour_config(
     tour_id = f"tdz-{year}"
     name = f"Tour de Zwift {year}"
 
-    if stages_data:
+    if stages_data:  # noqa: SIM108
         stages = [Stage.model_validate(s) for s in stages_data]
     else:
         # Create placeholder stages (can be updated later)

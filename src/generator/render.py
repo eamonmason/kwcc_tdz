@@ -1,13 +1,12 @@
 """Jinja2 template rendering for website generation."""
 
 import shutil
-from datetime import datetime
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.models.result import StageResult
-from src.models.standings import GCStandings, TourStandings
+from src.models.standings import TourStandings
 from src.models.tour import TourConfig
 
 
@@ -140,7 +139,7 @@ class WebsiteGenerator:
     def generate_gc_page(
         self,
         tour_standings: TourStandings,
-        tour_config: TourConfig,
+        tour_config: TourConfig,  # noqa: ARG002
     ) -> Path:
         """
         Generate gc.html (GC standings page).

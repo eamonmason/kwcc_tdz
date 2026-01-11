@@ -4,14 +4,13 @@
 import json
 import logging
 import os
-import re
 import sys
 from pathlib import Path
-from urllib.parse import urlencode, parse_qs, urlparse
+from urllib.parse import urlparse
 
-from dotenv import load_dotenv
 import httpx
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
@@ -205,7 +204,7 @@ def test_zwiftpower_oauth():
                                 print(f"    {k}: {str(v)[:50]}")
                         break  # Use first successful endpoint
                     else:
-                        print(f"  No 'data' key in response")
+                        print("  No 'data' key in response")
             except json.JSONDecodeError:
                 print(f"  Not JSON: {api_response.text[:100]}")
             except Exception as e:
@@ -262,7 +261,7 @@ def test_zwiftpower_oauth():
                         if results_response.status_code == 200:
                             try:
                                 results_data = results_response.json()
-                                if "data" in results_data and results_data["data"]:
+                                if results_data.get("data"):
                                     print(f"Got {len(results_data['data'])} results!")
 
                                     # Save the results for debugging
@@ -350,7 +349,7 @@ def test_zwiftpower_oauth():
                                         "category": rider.get("category", "?"),
                                         "kwcc_rider": kwcc_by_id.get(rider_zwid),
                                     })
-                except Exception as e:
+                except Exception:
                     pass  # Skip failed requests
 
             if kwcc_found:

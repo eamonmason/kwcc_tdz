@@ -4,10 +4,7 @@ import logging
 import re
 from datetime import datetime
 
-from bs4 import BeautifulSoup
-
 from src.fetcher.client import ZwiftPowerClient
-from src.fetcher.exceptions import ZwiftPowerParseError
 from src.models.result import RaceResult, parse_time
 from src.models.rider import RiderRegistry
 
@@ -197,13 +194,13 @@ def _fetch_results_html(
                 header = headers[i] if i < len(headers) else ""
 
                 if header in ("pos", "position", "#") or (i == 0 and text.isdigit()):
-                    try:
+                    try:  # noqa: SIM105
                         position = int(text)
                     except ValueError:
                         pass
 
                 if header == "time" or ":" in text:
-                    try:
+                    try:  # noqa: SIM105
                         raw_time = parse_time(text)
                     except ValueError:
                         pass
@@ -284,9 +281,7 @@ def fetch_stage_results(
 
             # Keep best result per rider
             for result in results:
-                if result.rider_id not in all_results:
-                    all_results[result.rider_id] = result
-                elif result.raw_time_seconds < all_results[result.rider_id].raw_time_seconds:
+                if result.rider_id not in all_results or result.raw_time_seconds < all_results[result.rider_id].raw_time_seconds:
                     all_results[result.rider_id] = result
 
         except Exception as e:

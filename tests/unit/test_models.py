@@ -1,10 +1,11 @@
 """Tests for data models."""
 
-import pytest
 from datetime import datetime
 
-from src.models.rider import Rider, RiderRegistry, HANDICAPS
+import pytest
+
 from src.models.result import RaceResult, StageResult, format_time, parse_time
+from src.models.rider import Rider
 
 
 class TestRider:

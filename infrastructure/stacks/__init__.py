@@ -6,8 +6,8 @@ from stacks.data_stack import DataStack
 from stacks.github_actions_stack import GitHubActionsStack
 
 __all__ = [
-    "DataStack",
-    "ComputeStack",
     "CdnStack",
+    "ComputeStack",
+    "DataStack",
     "GitHubActionsStack",
 ]

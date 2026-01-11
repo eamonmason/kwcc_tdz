@@ -1,16 +1,15 @@
 """Tests for handicap and stage results processing."""
 
-import pytest
-from datetime import datetime, time
+from datetime import datetime
 
-from src.models.penalty import PenaltyConfig, PenaltyEvent, DEFAULT_PENALTY_CONFIG
+from src.models.penalty import DEFAULT_PENALTY_CONFIG
 from src.models.result import RaceResult, StageResult
 from src.models.rider import Rider, RiderRegistry
 from src.processor.handicap import (
     apply_handicap,
     apply_handicap_and_penalty,
-    process_stage_results,
     get_best_result_per_rider,
+    process_stage_results,
 )
 
 

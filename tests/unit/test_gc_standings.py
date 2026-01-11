@@ -1,13 +1,10 @@
 """Tests for GC standings calculation."""
 
-import pytest
-from datetime import datetime
 
 from src.models.result import StageResult
-from src.models.standings import GCStanding
 from src.processor.gc_standings import (
-    calculate_gc_standings,
     build_tour_standings,
+    calculate_gc_standings,
 )
 
 

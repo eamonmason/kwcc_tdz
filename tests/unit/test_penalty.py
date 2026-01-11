@@ -1,12 +1,13 @@
 """Tests for penalty configuration."""
 
-import pytest
 from datetime import datetime, time
 
+import pytest
+
 from src.models.penalty import (
-    PenaltyEvent,
-    PenaltyConfig,
     DEFAULT_PENALTY_CONFIG,
+    PenaltyConfig,
+    PenaltyEvent,
     format_penalty,
 )
 

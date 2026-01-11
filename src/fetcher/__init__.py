@@ -21,17 +21,17 @@ from src.fetcher.results import (
 )
 
 __all__ = [
+    "ZwiftPowerAuthError",
     "ZwiftPowerClient",
-    "search_events",
+    "ZwiftPowerConnectionError",
+    "ZwiftPowerError",
+    "ZwiftPowerEventNotFoundError",
+    "ZwiftPowerParseError",
+    "ZwiftPowerRateLimitError",
+    "fetch_event_results",
+    "fetch_stage_results",
     "find_tdz_race_events",
     "find_tdz_race_events_with_timestamps",
     "get_event_details",
-    "fetch_event_results",
-    "fetch_stage_results",
-    "ZwiftPowerError",
-    "ZwiftPowerAuthError",
-    "ZwiftPowerRateLimitError",
-    "ZwiftPowerEventNotFoundError",
-    "ZwiftPowerConnectionError",
-    "ZwiftPowerParseError",
+    "search_events",
 ]

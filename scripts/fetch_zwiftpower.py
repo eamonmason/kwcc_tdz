@@ -281,9 +281,7 @@ def fetch_stage_from_zwiftpower(
 
             # Keep best result per rider
             for result in results:
-                if result.rider_id not in all_results:
-                    all_results[result.rider_id] = result
-                elif result.raw_time_seconds < all_results[result.rider_id].raw_time_seconds:
+                if result.rider_id not in all_results or result.raw_time_seconds < all_results[result.rider_id].raw_time_seconds:
                     all_results[result.rider_id] = result
 
             # Mark this event as cached

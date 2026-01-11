@@ -1,25 +1,23 @@
 """Tests for tour configuration and registry."""
 
-import json
 import tempfile
 from datetime import date
 from pathlib import Path
 
 import pytest
 
-from src.models.tour import (
-    DEFAULT_TOUR_REGISTRY,
-    TOUR_STAGES,
-    Stage,
-    TourConfig,
-    TourRegistry,
-)
 from src.config.tour_manager import (
     archive_tour,
     create_new_tour_config,
     get_tour_s3_paths,
     load_tour_registry_from_json,
     save_tour_registry_to_json,
+)
+from src.models.tour import (
+    DEFAULT_TOUR_REGISTRY,
+    Stage,
+    TourConfig,
+    TourRegistry,
 )
 
 

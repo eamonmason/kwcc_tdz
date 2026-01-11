@@ -58,7 +58,7 @@ def load_riders_from_csv(csv_path: str | Path) -> RiderRegistry:
             racing_score_str = row.get("ZP Racing Score", "").strip()
             racing_score: int | None = None
             if racing_score_str and racing_score_str.lower() != "tbc":
-                try:
+                try:  # noqa: SIM105
                     racing_score = int(racing_score_str)
                 except ValueError:
                     pass

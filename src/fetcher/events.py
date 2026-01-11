@@ -4,8 +4,6 @@ import logging
 import re
 from datetime import date, datetime
 
-from bs4 import BeautifulSoup
-
 from src.fetcher.client import ZwiftPowerClient
 from src.fetcher.exceptions import ZwiftPowerEventNotFoundError
 
@@ -50,7 +48,7 @@ def search_events_api(
                 timestamp = event.get("tm", 0)
                 event_date = None
                 if timestamp:
-                    try:
+                    try:  # noqa: SIM105
                         event_date = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M")
                     except (ValueError, OSError):
                         pass
@@ -380,7 +378,7 @@ def find_tdz_race_events_with_timestamps(
 
     # Get unique event IDs with timestamps
     seen_ids = set()
-    for event, score in scored_events:
+    for event, _score in scored_events:
         event_id = event["id"]
         if event_id not in seen_ids:
             # Convert timestamp to datetime

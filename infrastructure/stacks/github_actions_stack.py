@@ -7,6 +7,8 @@ using OIDC federation (no long-lived credentials needed).
 from aws_cdk import (
     CfnOutput,
     Stack,
+)
+from aws_cdk import (
     aws_iam as iam,
 )
 from constructs import Construct

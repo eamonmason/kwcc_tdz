@@ -8,7 +8,6 @@ from src.models import (
     RaceResult,
     Rider,
     RiderRegistry,
-    StageResult,
 )
 
 
