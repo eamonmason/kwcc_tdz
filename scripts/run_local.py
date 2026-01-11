@@ -32,7 +32,9 @@ def load_cached_stage_results(stage: int, group: str) -> list[StageResult] | Non
     return [StageResult.model_validate(r) for r in data]
 
 
-def load_all_cached_results() -> dict[int, tuple[list[StageResult], list[StageResult]]] | None:
+def load_all_cached_results() -> (
+    dict[int, tuple[list[StageResult], list[StageResult]]] | None
+):
     """Load all cached stage results."""
     results: dict[int, tuple[list[StageResult], list[StageResult]]] = {}
 
@@ -92,7 +94,10 @@ def generate_website_from_cache(output_dir: Path) -> tuple[list[Path] | None, bo
 
     cached_results = load_all_cached_results()
     if not cached_results:
-        print("No cached data found. Run 'uv run python scripts/fetch_zwiftpower.py' first.", flush=True)
+        print(
+            "No cached data found. Run 'uv run python scripts/fetch_zwiftpower.py' first.",
+            flush=True,
+        )
         return None, True
 
     print(f"Found cached data for {len(cached_results)} stages", flush=True)
@@ -137,8 +142,11 @@ def generate_website_from_cache(output_dir: Path) -> tuple[list[Path] | None, bo
         last_updated,
     )
 
-    print(f"GC standings: {len(tour_standings.group_a.standings)} Group A, "
-          f"{len(tour_standings.group_b.standings)} Group B", flush=True)
+    print(
+        f"GC standings: {len(tour_standings.group_a.standings)} Group A, "
+        f"{len(tour_standings.group_b.standings)} Group B",
+        flush=True,
+    )
 
     # Generate website (not mock data - using real cached results)
     generator = WebsiteGenerator(
@@ -172,13 +180,48 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
 
         print("Using sample test riders (CSV not found)", flush=True)
         sample_riders = [
-            Rider(name="Tom Kennett", zwiftpower_id="997635", handicap_group="A1", zp_racing_score=750),
-            Rider(name="Chris Jenkins", zwiftpower_id="2456208", handicap_group="A2", zp_racing_score=742),
-            Rider(name="Eamon Mason", zwiftpower_id="1231961", handicap_group="A3", zp_racing_score=542),
-            Rider(name="Adam Currie", zwiftpower_id="4037257", handicap_group="B1", zp_racing_score=234),
-            Rider(name="Gareth Edwards", zwiftpower_id="1746490", handicap_group="B2", zp_racing_score=263),
-            Rider(name="Tom Bagley", zwiftpower_id="783382", handicap_group="B3", zp_racing_score=226),
-            Rider(name="James Turner", zwiftpower_id="1098357", handicap_group="B4", zp_racing_score=216),
+            Rider(
+                name="Tom Kennett",
+                zwiftpower_id="997635",
+                handicap_group="A1",
+                zp_racing_score=750,
+            ),
+            Rider(
+                name="Chris Jenkins",
+                zwiftpower_id="2456208",
+                handicap_group="A2",
+                zp_racing_score=742,
+            ),
+            Rider(
+                name="Eamon Mason",
+                zwiftpower_id="1231961",
+                handicap_group="A3",
+                zp_racing_score=542,
+            ),
+            Rider(
+                name="Adam Currie",
+                zwiftpower_id="4037257",
+                handicap_group="B1",
+                zp_racing_score=234,
+            ),
+            Rider(
+                name="Gareth Edwards",
+                zwiftpower_id="1746490",
+                handicap_group="B2",
+                zp_racing_score=263,
+            ),
+            Rider(
+                name="Tom Bagley",
+                zwiftpower_id="783382",
+                handicap_group="B3",
+                zp_racing_score=226,
+            ),
+            Rider(
+                name="James Turner",
+                zwiftpower_id="1098357",
+                handicap_group="B4",
+                zp_racing_score=216,
+            ),
         ]
         rider_registry = RiderRegistry(riders=sample_riders)
 
@@ -209,7 +252,10 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
         group_b_results[stage] = group_b
         stage_results_dict[stage] = (group_a, group_b)
 
-        print(f"  Group A: {len(group_a)} riders, Group B: {len(group_b)} riders", flush=True)
+        print(
+            f"  Group A: {len(group_a)} riders, Group B: {len(group_b)} riders",
+            flush=True,
+        )
 
     # Build tour standings
     last_updated = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
@@ -221,8 +267,10 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
         last_updated=last_updated,
     )
 
-    print(f"GC standings: {len(tour_standings.group_a.standings)} Group A, "
-          f"{len(tour_standings.group_b.standings)} Group B")
+    print(
+        f"GC standings: {len(tour_standings.group_a.standings)} Group A, "
+        f"{len(tour_standings.group_b.standings)} Group B"
+    )
 
     # Generate website (is_mock_data=True since this is sample data)
     generator = WebsiteGenerator(

@@ -176,9 +176,7 @@ class TestDefaultPenaltyConfig:
 
         assert len(config.penalty_events) == 2
 
-        monday_events = [
-            e for e in config.penalty_events if e.day_of_week == 0
-        ]
+        monday_events = [e for e in config.penalty_events if e.day_of_week == 0]
         assert len(monday_events) == 2
 
         times = {e.event_time_utc for e in monday_events}

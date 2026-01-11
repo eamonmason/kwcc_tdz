@@ -227,14 +227,10 @@ class WebsiteGenerator:
         self.copy_static_assets()
 
         # Generate index page
-        generated_files.append(
-            self.generate_index(tour_standings, tour_config)
-        )
+        generated_files.append(self.generate_index(tour_standings, tour_config))
 
         # Generate GC page
-        generated_files.append(
-            self.generate_gc_page(tour_standings, tour_config)
-        )
+        generated_files.append(self.generate_gc_page(tour_standings, tour_config))
 
         # Generate stage pages
         for stage_num, (group_a, group_b) in stage_results.items():

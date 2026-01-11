@@ -40,26 +40,34 @@ def search_events_api(
     search_lower = search_term.lower()
     for event in all_events:
         # Event name is in 't' field (title)
-        event_name = event.get("t", "") or event.get("name", "") or event.get("title", "")
+        event_name = (
+            event.get("t", "") or event.get("name", "") or event.get("title", "")
+        )
         if search_lower in event_name.lower():
-            event_id = str(event.get("zid", "") or event.get("DT_RowId", "") or event.get("id", ""))
+            event_id = str(
+                event.get("zid", "") or event.get("DT_RowId", "") or event.get("id", "")
+            )
             if event_id and event_id not in [e["id"] for e in events]:
                 # Convert timestamp to date string
                 timestamp = event.get("tm", 0)
                 event_date = None
                 if timestamp:
                     try:  # noqa: SIM105
-                        event_date = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M")
+                        event_date = datetime.fromtimestamp(timestamp).strftime(
+                            "%Y-%m-%d %H:%M"
+                        )
                     except (ValueError, OSError):
                         pass
 
-                events.append({
-                    "id": event_id,
-                    "name": event_name,
-                    "date": event_date,
-                    "route_id": event.get("r", ""),
-                    "timestamp": timestamp,
-                })
+                events.append(
+                    {
+                        "id": event_id,
+                        "name": event_name,
+                        "date": event_date,
+                        "route_id": event.get("r", ""),
+                        "timestamp": timestamp,
+                    }
+                )
 
     logger.info(f"Found {len(events)} events matching '{search_term}'")
     return events
@@ -148,12 +156,14 @@ def search_events_html(
             if end_date and event_date and event_date > end_date:
                 continue
 
-            events.append({
-                "id": event_id.group(1),
-                "name": event_name,
-                "date": event_date.isoformat() if event_date else None,
-                "raw_date": date_text,
-            })
+            events.append(
+                {
+                    "id": event_id.group(1),
+                    "name": event_name,
+                    "date": event_date.isoformat() if event_date else None,
+                    "raw_date": date_text,
+                }
+            )
 
         except Exception as e:
             logger.debug(f"Error parsing event row: {e}")
@@ -239,12 +249,14 @@ def search_recent_events_html(
 
                 # Avoid duplicates
                 if event_id not in [e["id"] for e in all_events]:
-                    all_events.append({
-                        "id": event_id,
-                        "name": event_name,
-                        "date": None,
-                        "route": "",
-                    })
+                    all_events.append(
+                        {
+                            "id": event_id,
+                            "name": event_name,
+                            "date": None,
+                            "route": "",
+                        }
+                    )
 
         except Exception as e:
             logger.debug(f"Failed to search {page}: {e}")
@@ -397,7 +409,9 @@ def find_tdz_race_events_with_timestamps(
                     continue
                 if event["id"] not in seen_ids:
                     event_ts = event.get("timestamp", 0)
-                    event_datetime = datetime.fromtimestamp(event_ts) if event_ts else None
+                    event_datetime = (
+                        datetime.fromtimestamp(event_ts) if event_ts else None
+                    )
                     events_with_timestamps.append((event["id"], event_datetime))
                     seen_ids.add(event["id"])
 
@@ -406,7 +420,9 @@ def find_tdz_race_events_with_timestamps(
             f"No TdZ events found for Stage {stage_number}"
         )
 
-    logger.info(f"Found {len(events_with_timestamps)} event IDs for Stage {stage_number}")
+    logger.info(
+        f"Found {len(events_with_timestamps)} event IDs for Stage {stage_number}"
+    )
     return events_with_timestamps
 
 

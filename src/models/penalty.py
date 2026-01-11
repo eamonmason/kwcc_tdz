@@ -58,7 +58,9 @@ class PenaltyConfig(BaseModel):
                 continue
 
             # Check if event time is within 15 minutes of penalty event time
-            penalty_start = datetime.combine(event_datetime.date(), penalty_event.event_time_utc)
+            penalty_start = datetime.combine(
+                event_datetime.date(), penalty_event.event_time_utc
+            )
             event_dt = datetime.combine(event_datetime.date(), event_time)
 
             time_diff = abs((event_dt - penalty_start).total_seconds())

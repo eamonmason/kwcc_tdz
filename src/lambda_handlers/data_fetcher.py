@@ -58,7 +58,9 @@ def load_event_ids_from_s3(bucket: str, key: str = "config/event_ids.json"):
         return {}
 
 
-def load_event_timestamps_from_s3(bucket: str, key: str = "config/event_timestamps.json"):
+def load_event_timestamps_from_s3(
+    bucket: str, key: str = "config/event_timestamps.json"
+):
     """Load event timestamps from S3 for penalty calculation."""
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
@@ -95,7 +97,9 @@ def invoke_processor_lambda():
     """Invoke the results processor Lambda to generate the website."""
     processor_arn = os.environ.get("PROCESSOR_LAMBDA_ARN", "")
     if not processor_arn:
-        logger.warning("PROCESSOR_LAMBDA_ARN not configured, skipping processor invocation")
+        logger.warning(
+            "PROCESSOR_LAMBDA_ARN not configured, skipping processor invocation"
+        )
         return None
 
     try:

@@ -96,9 +96,7 @@ def process_stage_results(
         if not rider:
             continue
 
-        stage_result = apply_handicap_and_penalty(
-            race_result, rider, penalty_config
-        )
+        stage_result = apply_handicap_and_penalty(race_result, rider, penalty_config)
         stage_result.is_provisional = is_provisional
 
         if rider.race_group == "A":
@@ -157,7 +155,11 @@ def get_best_result_per_rider(
 
     for result in results:
         rider_id = result.rider_id
-        if rider_id not in best_results or result.adjusted_time_seconds < best_results[rider_id].adjusted_time_seconds:
+        if (
+            rider_id not in best_results
+            or result.adjusted_time_seconds
+            < best_results[rider_id].adjusted_time_seconds
+        ):
             best_results[rider_id] = result
 
     return list(best_results.values())

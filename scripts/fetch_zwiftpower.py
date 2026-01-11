@@ -112,7 +112,8 @@ def get_cached_event_ids(stage_number: int) -> set[str]:
     metadata = load_cache_metadata()
     event_cache = metadata.get("event_cache", {})
     return {
-        eid for eid, info in event_cache.items()
+        eid
+        for eid, info in event_cache.items()
         if info.get("stage_number") == stage_number
     }
 
@@ -281,7 +282,11 @@ def fetch_stage_from_zwiftpower(
 
             # Keep best result per rider
             for result in results:
-                if result.rider_id not in all_results or result.raw_time_seconds < all_results[result.rider_id].raw_time_seconds:
+                if (
+                    result.rider_id not in all_results
+                    or result.raw_time_seconds
+                    < all_results[result.rider_id].raw_time_seconds
+                ):
                     all_results[result.rider_id] = result
 
             # Mark this event as cached
@@ -526,7 +531,9 @@ How to find event IDs:
             print("\nTo fetch results, you need to configure ZwiftPower event IDs.")
             print("\nOptions:")
             print("  1. Add event IDs manually:")
-            print('     uv run python scripts/fetch_zwiftpower.py --add-event 1 <EVENT_ID>')
+            print(
+                "     uv run python scripts/fetch_zwiftpower.py --add-event 1 <EVENT_ID>"
+            )
             print("\n  2. Edit data/event_ids.json directly")
             print("\n  3. Try auto-discovery (may not work):")
             print("     uv run python scripts/fetch_zwiftpower.py --discover-events")

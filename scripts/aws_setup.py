@@ -197,9 +197,7 @@ def main():
     subparsers.add_parser("status", help="Show deployment status")
 
     # full-setup command
-    full_parser = subparsers.add_parser(
-        "full-setup", help="Run full initial setup"
-    )
+    full_parser = subparsers.add_parser("full-setup", help="Run full initial setup")
     full_parser.add_argument("--bucket", default=DATA_BUCKET, help="S3 bucket")
     full_parser.add_argument("--username", help="ZwiftPower username")
     full_parser.add_argument("--password", help="ZwiftPower password")
@@ -259,7 +257,9 @@ def main():
             configure_secret(SECRET_NAME, args.username, args.password)
         else:
             logger.info("\n[3/3] Skipping credential configuration (not provided)")
-            logger.info("Run: scripts/aws_setup.py configure-secret --username ... --password ...")
+            logger.info(
+                "Run: scripts/aws_setup.py configure-secret --username ... --password ..."
+            )
 
         logger.info("\n" + "=" * 50)
         logger.info("Setup complete!")

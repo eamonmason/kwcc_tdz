@@ -40,7 +40,9 @@ def generate_stage_output(
         "route": stage.route if stage else "",
         "distance_km": stage.distance_km if stage else 0,
         "elevation_m": stage.elevation_m if stage else 0,
-        "is_provisional": any(r.is_provisional for r in group_a_results + group_b_results),
+        "is_provisional": any(
+            r.is_provisional for r in group_a_results + group_b_results
+        ),
         "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M UTC"),
         "group_a": {
             "results": [r.model_dump(mode="json") for r in group_a_results],

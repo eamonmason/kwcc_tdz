@@ -49,7 +49,6 @@ def test_zwiftpower_oauth():
             "Accept-Language": "en-US,en;q=0.9",
         },
     ) as client:
-
         # Step 1: Start the OAuth flow
         print("=" * 60)
         print("Step 1: Starting OAuth flow...")
@@ -115,7 +114,7 @@ def test_zwiftpower_oauth():
         login_response = client.post(
             submit_url,
             data=form_data,
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         print(f"Login response status: {login_response.status_code}")
@@ -176,9 +175,18 @@ def test_zwiftpower_oauth():
 
         # Try the cached events list first (past 3 days with results)
         endpoints = [
-            ("Cached results (3 days)", "https://zwiftpower.com/cache3/lists/0_zwift_event_list_results_3.json"),
-            ("Cached results (7 days)", "https://zwiftpower.com/cache3/lists/0_zwift_event_list_results_7.json"),
-            ("Dynamic API (7 days)", "https://zwiftpower.com/api3.php?do=zwift_event_list_results&DAYS=7"),
+            (
+                "Cached results (3 days)",
+                "https://zwiftpower.com/cache3/lists/0_zwift_event_list_results_3.json",
+            ),
+            (
+                "Cached results (7 days)",
+                "https://zwiftpower.com/cache3/lists/0_zwift_event_list_results_7.json",
+            ),
+            (
+                "Dynamic API (7 days)",
+                "https://zwiftpower.com/api3.php?do=zwift_event_list_results&DAYS=7",
+            ),
         ]
 
         all_events = []
@@ -226,23 +234,32 @@ def test_zwiftpower_oauth():
                 if "tour de zwift" in name or "tdz" in name or "turf n surf" in name:
                     tdz_events.append(event)
 
-            print(f"Found {len(tdz_events)} TdZ-related events from {len(all_events)} total")
+            print(
+                f"Found {len(tdz_events)} TdZ-related events from {len(all_events)} total"
+            )
 
             if tdz_events:
                 print("\nTdZ Events:")
                 from datetime import datetime as dt
+
                 for event in tdz_events[:20]:
                     event_id = event.get("zid", event.get("DT_RowId", "?"))
                     event_name = event.get("t", "Unknown")
                     event_tm = event.get("tm", 0)
                     event_route = event.get("r", "")
                     # Convert timestamp to date
-                    event_date = dt.fromtimestamp(event_tm).strftime("%Y-%m-%d %H:%M") if event_tm else "?"
+                    event_date = (
+                        dt.fromtimestamp(event_tm).strftime("%Y-%m-%d %H:%M")
+                        if event_tm
+                        else "?"
+                    )
                     print(f"  {event_id}: {event_name}")
                     print(f"       Route ID: {event_route}, Date: {event_date}")
 
                 # Try fetching results for Category C events
-                cat_c_events = [e for e in tdz_events if "cat.c" in str(e.get("t", "")).lower()]
+                cat_c_events = [
+                    e for e in tdz_events if "cat.c" in str(e.get("t", "")).lower()
+                ]
                 if not cat_c_events:
                     cat_c_events = tdz_events[:3]  # Take first 3 if no Cat.C
 
@@ -265,18 +282,26 @@ def test_zwiftpower_oauth():
                                     print(f"Got {len(results_data['data'])} results!")
 
                                     # Save the results for debugging
-                                    debug_results = DATA_DIR / f"debug_results_{event_id}.json"
-                                    debug_results.write_text(json.dumps(results_data, indent=2))
+                                    debug_results = (
+                                        DATA_DIR / f"debug_results_{event_id}.json"
+                                    )
+                                    debug_results.write_text(
+                                        json.dumps(results_data, indent=2)
+                                    )
                                     print(f"Saved results to: {debug_results}")
 
                                     # Show top 5
                                     print("Top 5 finishers:")
                                     for r in results_data["data"][:5]:
-                                        rider_name = r.get("name", r.get("n", "Unknown"))
+                                        rider_name = r.get(
+                                            "name", r.get("n", "Unknown")
+                                        )
                                         time_str = r.get("time", r.get("t", "N/A"))
                                         print(f"  {rider_name}: {time_str}")
                                 else:
-                                    print(f"No data in response: {str(results_data)[:200]}")
+                                    print(
+                                        f"No data in response: {str(results_data)[:200]}"
+                                    )
                             except json.JSONDecodeError:
                                 print(f"Not JSON: {results_response.text[:100]}")
 
@@ -287,7 +312,9 @@ def test_zwiftpower_oauth():
                             try:
                                 dyn_data = dyn_response.json()
                                 if "data" in dyn_data:
-                                    print(f"Dynamic API: {len(dyn_data['data'])} results")
+                                    print(
+                                        f"Dynamic API: {len(dyn_data['data'])} results"
+                                    )
                             except json.JSONDecodeError:
                                 pass
             else:
@@ -308,6 +335,7 @@ def test_zwiftpower_oauth():
 
         # Load KWCC rider IDs from CSV
         from src.config import load_riders_from_csv
+
         riders_csv = PROJECT_ROOT / "KW TDZ sign on 2026 - Sheet1.csv"
         if riders_csv.exists():
             rider_registry = load_riders_from_csv(riders_csv)
@@ -320,7 +348,9 @@ def test_zwiftpower_oauth():
 
             # Get unique Cat.C TdZ events (Turf N Surf route = 763 based on ZP data)
             # We need to search all events that match Stage 1 pattern
-            stage1_events = [e for e in tdz_events if "stage 1" in e.get("t", "").lower()]
+            stage1_events = [
+                e for e in tdz_events if "stage 1" in e.get("t", "").lower()
+            ]
             print(f"\nSearching {len(stage1_events)} Stage 1 events for KWCC riders...")
 
             for event in stage1_events[:50]:  # Check up to 50 events
@@ -331,7 +361,9 @@ def test_zwiftpower_oauth():
                     continue
 
                 # Fetch results
-                results_url = f"https://zwiftpower.com/cache3/results/{event_id}_view.json"
+                results_url = (
+                    f"https://zwiftpower.com/cache3/results/{event_id}_view.json"
+                )
                 try:
                     results_response = client.get(results_url)
                     if results_response.status_code == 200:
@@ -340,15 +372,19 @@ def test_zwiftpower_oauth():
                             for rider in results_data["data"]:
                                 rider_zwid = str(rider.get("zwid", ""))
                                 if rider_zwid in kwcc_ids:
-                                    kwcc_found.append({
-                                        "event_id": event_id,
-                                        "event_name": event_name,
-                                        "rider_id": rider_zwid,
-                                        "rider_name": rider.get("name", "Unknown"),
-                                        "time": rider.get("time", [0, 0])[0] if isinstance(rider.get("time"), list) else rider.get("time", 0),
-                                        "category": rider.get("category", "?"),
-                                        "kwcc_rider": kwcc_by_id.get(rider_zwid),
-                                    })
+                                    kwcc_found.append(
+                                        {
+                                            "event_id": event_id,
+                                            "event_name": event_name,
+                                            "rider_id": rider_zwid,
+                                            "rider_name": rider.get("name", "Unknown"),
+                                            "time": rider.get("time", [0, 0])[0]
+                                            if isinstance(rider.get("time"), list)
+                                            else rider.get("time", 0),
+                                            "category": rider.get("category", "?"),
+                                            "kwcc_rider": kwcc_by_id.get(rider_zwid),
+                                        }
+                                    )
                 except Exception:
                     pass  # Skip failed requests
 
@@ -363,7 +399,9 @@ def test_zwiftpower_oauth():
                     time_rem = time_secs % 60
                     print(f"  {result['rider_name']} ({handicap})")
                     print(f"    Event: {result['event_name']}")
-                    print(f"    Time: {int(time_mins)}:{int(time_rem):02d} ({time_secs:.1f}s), Cat: {result['category']}")
+                    print(
+                        f"    Time: {int(time_mins)}:{int(time_rem):02d} ({time_secs:.1f}s), Cat: {result['category']}"
+                    )
             else:
                 print("No KWCC riders found in Stage 1 events yet")
         else:

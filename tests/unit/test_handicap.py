@@ -129,7 +129,9 @@ class TestApplyHandicapAndPenalty:
             timestamp=datetime(2026, 1, 5, 17, 0, 0),  # Monday 5pm
         )
 
-        stage_result = apply_handicap_and_penalty(race_result, rider, penalty_config=None)
+        stage_result = apply_handicap_and_penalty(
+            race_result, rider, penalty_config=None
+        )
 
         assert stage_result.penalty_seconds == 0
         assert stage_result.penalty_reason == ""

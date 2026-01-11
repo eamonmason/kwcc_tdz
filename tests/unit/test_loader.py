@@ -314,5 +314,9 @@ class TestSaveRidersToJSON:
             assert loaded.riders[0].name == original.riders[0].name
             assert loaded.riders[0].zwiftpower_id == original.riders[0].zwiftpower_id
             assert loaded.riders[0].handicap_group == original.riders[0].handicap_group
-            assert loaded.riders[0].zp_racing_score == original.riders[0].zp_racing_score
-            assert loaded.riders[1].zp_racing_score == original.riders[1].zp_racing_score
+            assert (
+                loaded.riders[0].zp_racing_score == original.riders[0].zp_racing_score
+            )
+            assert (
+                loaded.riders[1].zp_racing_score == original.riders[1].zp_racing_score
+            )

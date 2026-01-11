@@ -1,6 +1,5 @@
 """Tests for GC standings calculation."""
 
-
 from src.models.result import StageResult
 from src.processor.gc_standings import (
     build_tour_standings,
@@ -38,15 +37,11 @@ class TestCalculateGCStandings:
         """Test GC with one rider completing one stage."""
         stage_results = {
             1: [
-                create_stage_result(
-                    "Tom Kennett", "1", 1, "A", "A1", 3000
-                ),
+                create_stage_result("Tom Kennett", "1", 1, "A", "A1", 3000),
             ]
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=1
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=1)
 
         assert len(gc.standings) == 1
         assert gc.standings[0].rider_name == "Tom Kennett"
@@ -63,9 +58,7 @@ class TestCalculateGCStandings:
             ]
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=1
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=1)
 
         assert len(gc.standings) == 3
         assert gc.standings[0].rider_name == "Fast Rider"
@@ -84,9 +77,7 @@ class TestCalculateGCStandings:
             ]
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=1
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=1)
 
         assert gc.standings[0].gap_to_leader == 0
         assert gc.standings[1].gap_to_leader == 120  # 2 minutes behind
@@ -104,9 +95,7 @@ class TestCalculateGCStandings:
             ],
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=2
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=2)
 
         # Rider A: 3000 + 2900 = 5900
         # Rider B: 3100 + 2800 = 5900
@@ -129,9 +118,7 @@ class TestCalculateGCStandings:
             ],
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=2
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=2)
 
         # Only Complete Rider should be in GC
         assert len(gc.standings) == 1
@@ -146,12 +133,8 @@ class TestCalculateGCStandings:
             ]
         }
 
-        gc_a = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=1
-        )
-        gc_b = calculate_gc_standings(
-            stage_results, race_group="B", completed_stages=1
-        )
+        gc_a = calculate_gc_standings(stage_results, race_group="A", completed_stages=1)
+        gc_b = calculate_gc_standings(stage_results, race_group="B", completed_stages=1)
 
         assert len(gc_a.standings) == 1
         assert gc_a.standings[0].rider_name == "Group A Rider"
@@ -167,9 +150,7 @@ class TestCalculateGCStandings:
             3: [create_stage_result("Rider", "1", 3, "A", "A1", 3100)],
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=3
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=3)
 
         assert len(gc.standings) == 1
         stage_times = gc.standings[0].stage_times
@@ -180,9 +161,7 @@ class TestCalculateGCStandings:
 
     def test_provisional_flag_set(self):
         """Test provisional flag is set correctly."""
-        stage_results = {
-            1: [create_stage_result("Rider", "1", 1, "A", "A1", 3000)]
-        }
+        stage_results = {1: [create_stage_result("Rider", "1", 1, "A", "A1", 3000)]}
 
         gc_provisional = calculate_gc_standings(
             stage_results, race_group="A", completed_stages=1, is_provisional=True
@@ -210,9 +189,7 @@ class TestCalculateGCStandings:
             2: [create_stage_result("Rider", "1", 2, "A", "A1", 2900)],
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=2
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=2)
 
         assert gc.completed_stages == 2
         assert gc.standings[0].stages_completed == 2
@@ -223,12 +200,8 @@ class TestBuildTourStandings:
 
     def test_builds_both_groups(self):
         """Test tour standings includes both Group A and B."""
-        group_a_results = {
-            1: [create_stage_result("A Rider", "1", 1, "A", "A1", 3000)]
-        }
-        group_b_results = {
-            1: [create_stage_result("B Rider", "2", 1, "B", "B1", 3200)]
-        }
+        group_a_results = {1: [create_stage_result("A Rider", "1", 1, "A", "A1", 3000)]}
+        group_b_results = {1: [create_stage_result("B Rider", "2", 1, "B", "B1", 3200)]}
 
         tour = build_tour_standings(
             group_a_results,
@@ -243,26 +216,21 @@ class TestBuildTourStandings:
 
     def test_provisional_based_on_stages(self):
         """Test provisional flag based on completed stages."""
-        group_a_results = {
-            1: [create_stage_result("A Rider", "1", 1, "A", "A1", 3000)]
-        }
+        group_a_results = {1: [create_stage_result("A Rider", "1", 1, "A", "A1", 3000)]}
 
         # Less than 6 stages = provisional
-        tour_provisional = build_tour_standings(
-            group_a_results, {}, completed_stages=3
-        )
+        tour_provisional = build_tour_standings(group_a_results, {}, completed_stages=3)
         assert tour_provisional.group_a.is_provisional is True
 
         # All 6 stages = final
-        tour_final = build_tour_standings(
-            group_a_results, {}, completed_stages=6
-        )
+        tour_final = build_tour_standings(group_a_results, {}, completed_stages=6)
         assert tour_final.group_a.is_provisional is False
 
     def test_last_updated_set(self):
         """Test last_updated is set on standings."""
         tour = build_tour_standings(
-            {}, {},
+            {},
+            {},
             completed_stages=1,
             last_updated="2026-01-06 18:00 UTC",
         )
@@ -274,7 +242,8 @@ class TestBuildTourStandings:
     def test_current_stage_set(self):
         """Test current_stage is set."""
         tour = build_tour_standings(
-            {}, {},
+            {},
+            {},
             completed_stages=2,
             current_stage=3,
         )
@@ -291,12 +260,12 @@ class TestGCEdgeCases:
         stage_results = {
             1: [create_stage_result("Eager Rider", "1", 1, "A", "A1", 3000)],
             2: [create_stage_result("Eager Rider", "1", 2, "A", "A1", 2900)],
-            3: [create_stage_result("Eager Rider", "1", 3, "A", "A1", 3100)],  # Future stage
+            3: [
+                create_stage_result("Eager Rider", "1", 3, "A", "A1", 3100)
+            ],  # Future stage
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=2
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=2)
 
         # Should only count stages 1 and 2
         assert gc.standings[0].total_adjusted_time_seconds == 5900  # 3000 + 2900
@@ -310,9 +279,7 @@ class TestGCEdgeCases:
             ]
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=1
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=1)
 
         # Both should be in standings with same time
         assert len(gc.standings) == 2
@@ -331,9 +298,7 @@ class TestGCEdgeCases:
             3: [create_stage_result("Skipper", "1", 3, "A", "A1", 3100)],
         }
 
-        gc = calculate_gc_standings(
-            stage_results, race_group="A", completed_stages=3
-        )
+        gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=3)
 
         # Rider should be excluded (missing stage 2)
         assert len(gc.standings) == 0

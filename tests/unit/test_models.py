@@ -37,11 +37,11 @@ class TestRider:
         [
             ("A1", 600),  # 10 min
             ("A2", 300),  # 5 min
-            ("A3", 0),    # scratch
+            ("A3", 0),  # scratch
             ("B1", 900),  # 15 min
             ("B2", 600),  # 10 min
             ("B3", 240),  # 4 min
-            ("B4", 0),    # scratch
+            ("B4", 0),  # scratch
         ],
     )
     def test_handicap_seconds(self, handicap_group: str, expected_seconds: int):
@@ -215,7 +215,7 @@ class TestStageResult:
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,  # 40 min
-            handicap_seconds=600,    # +10 min
+            handicap_seconds=600,  # +10 min
             penalty_seconds=0,
             position=1,
             raw_position=1,
@@ -231,8 +231,8 @@ class TestStageResult:
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,  # 40 min
-            handicap_seconds=600,   # +10 min
-            penalty_seconds=60,     # +1 min
+            handicap_seconds=600,  # +10 min
+            penalty_seconds=60,  # +1 min
             penalty_reason="Monday 17:00 UTC event",
             position=1,
             raw_position=1,

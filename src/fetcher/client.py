@@ -17,7 +17,9 @@ from src.fetcher.exceptions import (
 logger = logging.getLogger(__name__)
 
 ZWIFTPOWER_BASE_URL = "https://zwiftpower.com"
-OAUTH_LOGIN_URL = "https://zwiftpower.com/ucp.php?mode=login&login=external&oauth_service=oauthzpsso"
+OAUTH_LOGIN_URL = (
+    "https://zwiftpower.com/ucp.php?mode=login&login=external&oauth_service=oauthzpsso"
+)
 DEFAULT_TIMEOUT = 30.0
 MAX_RETRIES = 3
 RETRY_DELAY = 5.0
@@ -74,9 +76,7 @@ class ZwiftPowerClient:
     def client(self) -> httpx.Client:
         """Get the HTTP client, raising if not initialized."""
         if self._client is None:
-            raise RuntimeError(
-                "ZwiftPowerClient must be used as context manager"
-            )
+            raise RuntimeError("ZwiftPowerClient must be used as context manager")
         return self._client
 
     def authenticate(self) -> bool:
@@ -143,7 +143,7 @@ class ZwiftPowerClient:
             login_response = self.client.post(
                 submit_url,
                 data=form_data,
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             # Step 4: Check if we're back on ZwiftPower
@@ -196,9 +196,7 @@ class ZwiftPowerClient:
                 if response.status_code == 429:
                     if attempt < retries - 1:
                         delay = RETRY_DELAY * (2**attempt)
-                        logger.warning(
-                            f"Rate limited, retrying in {delay}s..."
-                        )
+                        logger.warning(f"Rate limited, retrying in {delay}s...")
                         time.sleep(delay)
                         continue
                     raise ZwiftPowerRateLimitError("Rate limited by ZwiftPower")

@@ -15,13 +15,48 @@ from src.models import (
 def sample_riders() -> list[Rider]:
     """Create sample riders for testing."""
     return [
-        Rider(name="Tom Kennett", zwiftpower_id="997635", handicap_group="A1", zp_racing_score=750),
-        Rider(name="Chris Jenkins", zwiftpower_id="2456208", handicap_group="A2", zp_racing_score=742),
-        Rider(name="Eamon Mason", zwiftpower_id="1231961", handicap_group="A3", zp_racing_score=542),
-        Rider(name="Adam Currie", zwiftpower_id="4037257", handicap_group="B1", zp_racing_score=234),
-        Rider(name="Gareth Edwards", zwiftpower_id="1746490", handicap_group="B2", zp_racing_score=263),
-        Rider(name="Tom Bagley", zwiftpower_id="783382", handicap_group="B3", zp_racing_score=226),
-        Rider(name="James Turner", zwiftpower_id="1098357", handicap_group="B4", zp_racing_score=216),
+        Rider(
+            name="Tom Kennett",
+            zwiftpower_id="997635",
+            handicap_group="A1",
+            zp_racing_score=750,
+        ),
+        Rider(
+            name="Chris Jenkins",
+            zwiftpower_id="2456208",
+            handicap_group="A2",
+            zp_racing_score=742,
+        ),
+        Rider(
+            name="Eamon Mason",
+            zwiftpower_id="1231961",
+            handicap_group="A3",
+            zp_racing_score=542,
+        ),
+        Rider(
+            name="Adam Currie",
+            zwiftpower_id="4037257",
+            handicap_group="B1",
+            zp_racing_score=234,
+        ),
+        Rider(
+            name="Gareth Edwards",
+            zwiftpower_id="1746490",
+            handicap_group="B2",
+            zp_racing_score=263,
+        ),
+        Rider(
+            name="Tom Bagley",
+            zwiftpower_id="783382",
+            handicap_group="B3",
+            zp_racing_score=226,
+        ),
+        Rider(
+            name="James Turner",
+            zwiftpower_id="1098357",
+            handicap_group="B4",
+            zp_racing_score=216,
+        ),
     ]
 
 

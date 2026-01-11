@@ -78,7 +78,9 @@ def upload_directory_to_s3(local_dir: str, bucket: str) -> int:
     for file_path in local_path.rglob("*"):
         if file_path.is_file():
             key = str(file_path.relative_to(local_path))
-            content_type = content_types.get(file_path.suffix, "application/octet-stream")
+            content_type = content_types.get(
+                file_path.suffix, "application/octet-stream"
+            )
 
             s3_client.upload_file(
                 str(file_path),
