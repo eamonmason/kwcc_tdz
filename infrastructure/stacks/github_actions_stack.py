@@ -237,6 +237,21 @@ class GitHubActionsStack(Stack):
             )
         )
 
+        # CDK bootstrap roles - required for CDK deploy
+        github_actions_role.add_to_policy(
+            iam.PolicyStatement(
+                sid="CDKBootstrapRoles",
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "sts:AssumeRole",
+                    "iam:PassRole",
+                ],
+                resources=[
+                    f"arn:aws:iam::{self.account}:role/cdk-*-{self.account}-{self.region}",
+                ],
+            )
+        )
+
         # CloudFront permissions
         github_actions_role.add_to_policy(
             iam.PolicyStatement(
