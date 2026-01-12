@@ -87,7 +87,7 @@
                     <td class="position">{{ standing.position }}</td>
                     <td class="rider-name">
                         <div class="rider-name-with-avatar">
-                            <img src="https://zwiftpower.com/cache3/profile/{{ standing.rider_id }}_sml.jpg"
+                            <img src="{{ url_prefix }}avatars/{{ standing.rider_id }}.jpg"
                                  alt="{{ standing.rider_name }}"
                                  class="rider-avatar"
                                  onerror="this.classList.add('loading-error')">
@@ -128,7 +128,7 @@
                     <td class="position">{{ standing.position }}</td>
                     <td class="rider-name">
                         <div class="rider-name-with-avatar">
-                            <img src="https://zwiftpower.com/cache3/profile/{{ standing.rider_id }}_sml.jpg"
+                            <img src="{{ url_prefix }}avatars/{{ standing.rider_id }}.jpg"
                                  alt="{{ standing.rider_name }}"
                                  class="rider-avatar"
                                  onerror="this.classList.add('loading-error')">

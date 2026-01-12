@@ -308,6 +308,11 @@ class WebsiteGenerator:
         # Copy static assets
         self.copy_static_assets()
 
+        # Download rider avatars
+        from src.generator.avatars import download_avatars_for_standings
+
+        download_avatars_for_standings(tour_standings, self.output_dir)
+
         # Generate index page
         generated_files.append(self.generate_index(tour_standings, tour_config))
 
