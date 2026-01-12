@@ -119,7 +119,10 @@ def handler(event, context):  # noqa: ARG001
     """
     Lambda handler for fetching ZwiftPower results.
 
-    Triggered hourly by EventBridge.
+    Triggered hourly by EventBridge, or manually with optional stage override.
+
+    Event payload options:
+        stage_override: int - Force fetch for a specific stage number (1-6)
     """
     logger.info("Starting ZwiftPower data fetch")
     logger.info(f"Event: {json.dumps(event)}")
@@ -143,11 +146,23 @@ def handler(event, context):  # noqa: ARG001
         # Get credentials
         username, password = get_zwiftpower_credentials()
 
-        # Determine current stage
-        current_stage = tour_config.current_stage
-        if not current_stage:
-            logger.info("No active stage")
-            return {"statusCode": 200, "body": "No active stage"}
+        # Check for stage override in event payload
+        stage_override = event.get("stage_override") if event else None
+
+        if stage_override:
+            # Manual override - fetch specific stage regardless of dates
+            current_stage = tour_config.get_stage(int(stage_override))
+            if not current_stage:
+                return {"statusCode": 400, "body": f"Invalid stage: {stage_override}"}
+            logger.info(f"Stage override: fetching Stage {stage_override}")
+            is_provisional = False  # Treat overridden fetches as final
+        else:
+            # Normal operation - use current active stage
+            current_stage = tour_config.current_stage
+            if not current_stage:
+                logger.info("No active stage")
+                return {"statusCode": 200, "body": "No active stage"}
+            is_provisional = current_stage.is_active
 
         logger.info(f"Processing Stage {current_stage.number}: {current_stage.name}")
 
@@ -182,7 +197,7 @@ def handler(event, context):  # noqa: ARG001
                 race_results,
                 rider_registry,
                 current_stage.number,
-                is_provisional=current_stage.is_active,
+                is_provisional=is_provisional,
                 penalty_config=DEFAULT_PENALTY_CONFIG,
             )
 
