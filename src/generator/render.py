@@ -146,6 +146,9 @@ class WebsiteGenerator:
         self,
         tour_standings: TourStandings,
         tour_config: TourConfig,  # noqa: ARG002
+        stage_results: dict[
+            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+        ],
     ) -> Path:
         """
         Generate gc.html (GC standings page).
@@ -153,16 +156,74 @@ class WebsiteGenerator:
         Args:
             tour_standings: Current tour standings
             tour_config: Tour configuration
+            stage_results: Dict mapping stage number to (group_a, group_b, uncategorized) results
 
         Returns:
             Path to generated file
         """
+        from src.processor.gc_standings import calculate_gc_standings
+
+        # Calculate GC for each stage (1 through max available)
+        max_stage = max(stage_results.keys()) if stage_results else 1
+        completed_stages = tour_standings.group_a.completed_stages
+
+        # Build stage results dict for GC calculation
+        group_a_results: dict[int, list[StageResult]] = {}
+        group_b_results: dict[int, list[StageResult]] = {}
+
+        for stage_num, (group_a, group_b, _) in stage_results.items():
+            group_a_results[stage_num] = group_a
+            group_b_results[stage_num] = group_b
+
+        # Calculate GC for each stage
+        gc_by_stage_a = {}
+        gc_by_stage_b = {}
+
+        for stage_num in range(1, max_stage + 1):
+            # Only include DNS riders for current stage in progress
+            include_dns_riders = (
+                stage_num == tour_standings.current_stage
+                and tour_standings.is_stage_in_progress
+            )
+
+            gc_by_stage_a[stage_num] = calculate_gc_standings(
+                group_a_results,
+                "A",
+                completed_stages,
+                tour_standings.is_provisional,
+                include_guests=True,
+                target_stage=stage_num,
+                include_dns=include_dns_riders,
+            )
+            gc_by_stage_b[stage_num] = calculate_gc_standings(
+                group_b_results,
+                "B",
+                completed_stages,
+                tour_standings.is_provisional,
+                include_guests=True,
+                target_stage=stage_num,
+                include_dns=include_dns_riders,
+            )
+
+        # Default to current stage or final stage
+        default_stage = (
+            tour_standings.current_stage
+            if tour_standings.is_stage_in_progress
+            else max_stage
+        )
+
         context = {
             "group_a": tour_standings.group_a,
             "group_b": tour_standings.group_b,
-            "completed_stages": tour_standings.group_a.completed_stages,
+            "completed_stages": completed_stages,
             "is_provisional": tour_standings.is_provisional,
             "last_updated": tour_standings.last_updated,
+            "gc_by_stage_a": gc_by_stage_a,
+            "gc_by_stage_b": gc_by_stage_b,
+            "max_stage": max_stage,
+            "default_stage": default_stage,
+            "current_stage": tour_standings.current_stage,
+            "is_stage_in_progress": tour_standings.is_stage_in_progress,
         }
 
         content = self._render_template("gc.html", context)
@@ -251,7 +312,9 @@ class WebsiteGenerator:
         generated_files.append(self.generate_index(tour_standings, tour_config))
 
         # Generate GC page
-        generated_files.append(self.generate_gc_page(tour_standings, tour_config))
+        generated_files.append(
+            self.generate_gc_page(tour_standings, tour_config, stage_results)
+        )
 
         # Generate stage pages
         for stage_num, (group_a, group_b, uncategorized) in stage_results.items():

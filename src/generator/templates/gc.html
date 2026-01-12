@@ -41,13 +41,46 @@
     tr.guest-row.hidden {
         display: none;
     }
+
+    .dns-row {
+        background-color: #ffe5e5 !important;
+        opacity: 0.8;
+    }
+
+    .stage-selector {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .stage-selector label {
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .stage-selector select {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .gc-standings-container {
+        display: none;
+    }
+
+    .gc-standings-container.active {
+        display: block;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="gc-header">
     <h2>General Classification</h2>
-    <p class="gc-subtitle">
+    <p class="gc-subtitle" id="gc-subtitle">
         {{ completed_stages }} of 6 stages completed
         {% if is_provisional %}
         <span class="provisional-badge">PROVISIONAL</span>
@@ -55,136 +88,153 @@
     </p>
 </div>
 
+<div class="stage-selector">
+    <label for="stage-select">View GC after Stage:</label>
+    <select id="stage-select">
+        {% for stage_num in range(1, max_stage + 1) %}
+        <option value="{{ stage_num }}" {% if stage_num == default_stage %}selected{% endif %}>
+            Stage {{ stage_num }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
 <div class="guest-filter">
     <input type="checkbox" id="global-show-guests" checked>
     <label for="global-show-guests">Show guest riders</label>
 </div>
 
-<div class="gc-standings">
-    <section class="group-gc" id="group-a">
-        <h3>Group A - GC</h3>
-        {% if group_a.standings %}
-        <div class="table-wrapper">
-            <table class="results-table gc-table" id="table-gc-a">
-                <thead>
-                    <tr>
-                        <th>Pos</th>
-                        <th>Rider</th>
-                        <th>Handicap</th>
-                        <th>Total Time</th>
-                        <th>Gap</th>
-                        {% for stage_num in range(1, 7) %}
-                        <th class="stage-col">S{{ stage_num }}</th>
+{% for stage_num in range(1, max_stage + 1) %}
+<div class="gc-standings-container" id="gc-stage-{{ stage_num }}" data-stage="{{ stage_num }}">
+    <div class="gc-standings">
+        <section class="group-gc" id="group-a-stage-{{ stage_num }}">
+            <h3>Group A - GC</h3>
+            {% set stage_gc_a = gc_by_stage_a[stage_num] %}
+            {% if stage_gc_a.standings %}
+            <div class="table-wrapper">
+                <table class="results-table gc-table">
+                    <thead>
+                        <tr>
+                            <th>Pos</th>
+                            <th>Rider</th>
+                            <th>Handicap</th>
+                            <th>Total Time</th>
+                            <th>Gap</th>
+                            {% for s in range(1, 7) %}
+                            <th class="stage-col">S{{ s }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for standing in stage_gc_a.standings %}
+                        <tr class="{% if standing.position <= 3 and not standing.is_dns %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}{% if standing.is_dns %} dns-row{% endif %}"
+                            data-guest="{{ 'true' if standing.guest else 'false' }}">
+                            <td class="position">
+                                {% if standing.is_dns %}
+                                DNS
+                                {% elif standing.position == 1 %}
+                                <span class="medal gold">&#129351;</span>
+                                {% elif standing.position == 2 %}
+                                <span class="medal silver">&#129352;</span>
+                                {% elif standing.position == 3 %}
+                                <span class="medal bronze">&#129353;</span>
+                                {% else %}
+                                {{ standing.position }}
+                                {% endif %}
+                            </td>
+                            <td class="rider-name">
+                                {{ standing.rider_name }}
+                                {% if standing.guest %}
+                                <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                                {% endif %}
+                            </td>
+                            <td class="handicap">{{ standing.handicap_group }}</td>
+                            <td class="time total-time">{{ standing.total_time_display if not standing.is_dns else '-' }}</td>
+                            <td class="gap">{{ standing.gap_display if not standing.is_dns else '-' }}</td>
+                            {% for s in range(1, 7) %}
+                            <td class="stage-time">{{ standing.get_stage_time_display(s) }}</td>
+                            {% endfor %}
+                        </tr>
                         {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for standing in group_a.standings %}
-                    <tr class="{% if standing.position <= 3 %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}"
-                        data-guest="{{ 'true' if standing.guest else 'false' }}">
-                        <td class="position">
-                            {% if standing.position == 1 %}
-                            <span class="medal gold">&#129351;</span>
-                            {% elif standing.position == 2 %}
-                            <span class="medal silver">&#129352;</span>
-                            {% elif standing.position == 3 %}
-                            <span class="medal bronze">&#129353;</span>
-                            {% else %}
-                            {{ standing.position }}
-                            {% endif %}
-                        </td>
-                        <td class="rider-name">
-                            {{ standing.rider_name }}
-                            {% if standing.guest %}
-                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
-                            {% endif %}
-                        </td>
-                        <td class="handicap">{{ standing.handicap_group }}</td>
-                        <td class="time total-time">{{ standing.total_time_display }}</td>
-                        <td class="gap">{{ standing.gap_display }}</td>
-                        {% for stage_num in range(1, 7) %}
-                        <td class="stage-time">{{ standing.get_stage_time_display(stage_num) }}</td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <p class="results-count">
-            {{ group_a.standings|length }} riders in GC
-            (completed all {{ completed_stages }} stages)
-        </p>
-        {% else %}
-        <p class="no-results">
-            No riders have completed all stages yet.
-            <br>
-            Riders must complete ALL stages to appear in the GC standings.
-        </p>
-        {% endif %}
-    </section>
+                    </tbody>
+                </table>
+            </div>
+            <p class="results-count">
+                {{ stage_gc_a.standings|length }} riders
+                (after Stage {{ stage_num }})
+            </p>
+            {% else %}
+            <p class="no-results">
+                No riders have completed Stage {{ stage_num }} yet.
+            </p>
+            {% endif %}
+        </section>
 
-    <section class="group-gc" id="group-b">
-        <h3>Group B - GC</h3>
-        {% if group_b.standings %}
-        <div class="table-wrapper">
-            <table class="results-table gc-table" id="table-gc-b">
-                <thead>
-                    <tr>
-                        <th>Pos</th>
-                        <th>Rider</th>
-                        <th>Handicap</th>
-                        <th>Total Time</th>
-                        <th>Gap</th>
-                        {% for stage_num in range(1, 7) %}
-                        <th class="stage-col">S{{ stage_num }}</th>
+        <section class="group-gc" id="group-b-stage-{{ stage_num }}">
+            <h3>Group B - GC</h3>
+            {% set stage_gc_b = gc_by_stage_b[stage_num] %}
+            {% if stage_gc_b.standings %}
+            <div class="table-wrapper">
+                <table class="results-table gc-table">
+                    <thead>
+                        <tr>
+                            <th>Pos</th>
+                            <th>Rider</th>
+                            <th>Handicap</th>
+                            <th>Total Time</th>
+                            <th>Gap</th>
+                            {% for s in range(1, 7) %}
+                            <th class="stage-col">S{{ s }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for standing in stage_gc_b.standings %}
+                        <tr class="{% if standing.position <= 3 and not standing.is_dns %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}{% if standing.is_dns %} dns-row{% endif %}"
+                            data-guest="{{ 'true' if standing.guest else 'false' }}">
+                            <td class="position">
+                                {% if standing.is_dns %}
+                                DNS
+                                {% elif standing.position == 1 %}
+                                <span class="medal gold">&#129351;</span>
+                                {% elif standing.position == 2 %}
+                                <span class="medal silver">&#129352;</span>
+                                {% elif standing.position == 3 %}
+                                <span class="medal bronze">&#129353;</span>
+                                {% else %}
+                                {{ standing.position }}
+                                {% endif %}
+                            </td>
+                            <td class="rider-name">
+                                {{ standing.rider_name }}
+                                {% if standing.guest %}
+                                <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                                {% endif %}
+                            </td>
+                            <td class="handicap">{{ standing.handicap_group }}</td>
+                            <td class="time total-time">{{ standing.total_time_display if not standing.is_dns else '-' }}</td>
+                            <td class="gap">{{ standing.gap_display if not standing.is_dns else '-' }}</td>
+                            {% for s in range(1, 7) %}
+                            <td class="stage-time">{{ standing.get_stage_time_display(s) }}</td>
+                            {% endfor %}
+                        </tr>
                         {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for standing in group_b.standings %}
-                    <tr class="{% if standing.position <= 3 %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}"
-                        data-guest="{{ 'true' if standing.guest else 'false' }}">
-                        <td class="position">
-                            {% if standing.position == 1 %}
-                            <span class="medal gold">&#129351;</span>
-                            {% elif standing.position == 2 %}
-                            <span class="medal silver">&#129352;</span>
-                            {% elif standing.position == 3 %}
-                            <span class="medal bronze">&#129353;</span>
-                            {% else %}
-                            {{ standing.position }}
-                            {% endif %}
-                        </td>
-                        <td class="rider-name">
-                            {{ standing.rider_name }}
-                            {% if standing.guest %}
-                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
-                            {% endif %}
-                        </td>
-                        <td class="handicap">{{ standing.handicap_group }}</td>
-                        <td class="time total-time">{{ standing.total_time_display }}</td>
-                        <td class="gap">{{ standing.gap_display }}</td>
-                        {% for stage_num in range(1, 7) %}
-                        <td class="stage-time">{{ standing.get_stage_time_display(stage_num) }}</td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <p class="results-count">
-            {{ group_b.standings|length }} riders in GC
-            (completed all {{ completed_stages }} stages)
-        </p>
-        {% else %}
-        <p class="no-results">
-            No riders have completed all stages yet.
-            <br>
-            Riders must complete ALL stages to appear in the GC standings.
-        </p>
-        {% endif %}
-    </section>
+                    </tbody>
+                </table>
+            </div>
+            <p class="results-count">
+                {{ stage_gc_b.standings|length }} riders
+                (after Stage {{ stage_num }})
+            </p>
+            {% else %}
+            <p class="no-results">
+                No riders have completed Stage {{ stage_num }} yet.
+            </p>
+            {% endif %}
+        </section>
+    </div>
 </div>
+{% endfor %}
 
 <section class="gc-rules">
     <h4>GC Rules</h4>
@@ -199,6 +249,62 @@
 
 {% block extra_scripts %}
 <script>
+// Stage selection and GC display management
+(function() {
+    const stageSelect = document.getElementById('stage-select');
+    const subtitle = document.getElementById('gc-subtitle');
+    const currentStage = {{ current_stage }};
+    const isStageInProgress = {{ 'true' if is_stage_in_progress else 'false' }};
+    const maxStage = {{ max_stage }};
+
+    if (!stageSelect) return;
+
+    // Show the selected stage's GC
+    function showStageGC(stageNum) {
+        // Hide all stage containers
+        document.querySelectorAll('.gc-standings-container').forEach(container => {
+            container.classList.remove('active');
+        });
+
+        // Show selected stage
+        const selectedContainer = document.getElementById(`gc-stage-${stageNum}`);
+        if (selectedContainer) {
+            selectedContainer.classList.add('active');
+        }
+
+        // Update subtitle text
+        updateSubtitle(stageNum);
+    }
+
+    // Update the subtitle based on selected stage
+    function updateSubtitle(stageNum) {
+        let text = '';
+        if (stageNum === currentStage && isStageInProgress) {
+            text = `${stageNum - 1} of ${maxStage} stages completed, Stage ${stageNum} in progress`;
+        } else if (stageNum === maxStage && maxStage === 6) {
+            text = `All 6 stages completed - Final Classification`;
+        } else {
+            text = `${stageNum} of ${maxStage} stages completed`;
+        }
+
+        // Add provisional badge if applicable
+        {% if is_provisional %}
+        text += ' <span class="provisional-badge">PROVISIONAL</span>';
+        {% endif %}
+
+        subtitle.innerHTML = text;
+    }
+
+    // Initialize with default stage
+    showStageGC(parseInt(stageSelect.value));
+
+    // Handle stage selection changes
+    stageSelect.addEventListener('change', () => {
+        const selectedStage = parseInt(stageSelect.value);
+        showStageGC(selectedStage);
+    });
+})();
+
 // Global guest rider filter with localStorage persistence
 (function() {
     const STORAGE_KEY = 'kwcc-tdz-show-guests';

@@ -25,6 +25,10 @@ class GCStanding(BaseModel):
         default=False,
         description="Guest rider (non-club member)",
     )
+    is_dns: bool = Field(
+        default=False,
+        description="DNS for current stage (completed all prior stages)",
+    )
 
     @computed_field
     @property

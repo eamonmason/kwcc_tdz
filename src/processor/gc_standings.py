@@ -10,6 +10,8 @@ def calculate_gc_standings(
     completed_stages: int,
     is_provisional: bool = True,
     include_guests: bool = False,
+    target_stage: int | None = None,
+    include_dns: bool = False,
 ) -> GCStandings:
     """
     Calculate GC standings from all stage results.
@@ -22,14 +24,24 @@ def calculate_gc_standings(
         completed_stages: Number of stages that have been completed
         is_provisional: Whether the tour is still in progress
         include_guests: Whether to include guest riders in standings (default: False)
+        target_stage: Calculate GC up to this stage (defaults to completed_stages)
+        include_dns: Include DNS riders who completed all prior stages (default: False)
 
     Returns:
         GCStandings for the race group
     """
+    # Default target_stage to completed_stages
+    if target_stage is None:
+        target_stage = completed_stages
+
     # Collect all riders and their results
     rider_results: dict[str, dict[int, StageResult]] = {}
 
     for stage_num, results in all_stage_results.items():
+        # Only consider stages up to target_stage
+        if stage_num > target_stage:
+            continue
+
         for result in results:
             if result.race_group != race_group:
                 continue
@@ -46,20 +58,59 @@ def calculate_gc_standings(
                 rider_results[result.rider_id] = {}
             rider_results[result.rider_id][stage_num] = result
 
-    # Build GC standings - only include riders who completed ALL stages
+    # Build GC standings - include riders who completed ALL stages up to target_stage
     standings: list[GCStanding] = []
+    dns_standings: list[
+        GCStanding
+    ] = []  # Riders who completed prior stages but not target
 
     for rider_id, stage_results in rider_results.items():
-        # Check if rider completed all stages (up to completed_stages)
-        required_stages = set(range(1, completed_stages + 1))
+        # Check if rider completed all stages (up to target_stage)
+        required_stages = set(range(1, target_stage + 1))
         completed = set(stage_results.keys())
-
-        if not required_stages.issubset(completed):
-            # Rider hasn't completed all required stages - exclude from GC
-            continue
 
         # Get rider info from first result
         first_result = next(iter(stage_results.values()))
+
+        if not required_stages.issubset(completed):
+            # Check if rider completed all PRIOR stages but not target stage
+            # Only include DNS riders if explicitly requested
+            if include_dns:
+                prior_stages = set(range(1, target_stage))
+                if (
+                    prior_stages
+                    and prior_stages.issubset(completed)
+                    and target_stage not in completed
+                ):
+                    # DNS for target stage - include at bottom
+                    total_time = sum(
+                        stage_results[s].adjusted_time_seconds
+                        for s in prior_stages
+                        if s in stage_results
+                    )
+
+                    # Build stage times dict
+                    stage_times = {
+                        stage: result.adjusted_time_seconds
+                        for stage, result in stage_results.items()
+                    }
+
+                    standing = GCStanding(
+                        rider_name=first_result.rider_name,
+                        rider_id=rider_id,
+                        race_group=race_group,
+                        handicap_group=first_result.handicap_group,
+                        total_adjusted_time_seconds=total_time,
+                        stages_completed=len(stage_results),
+                        stage_times=stage_times,
+                        position=0,  # Will be set after sorting
+                        gap_to_leader=0,  # Will be set after sorting
+                        is_provisional=is_provisional,
+                        guest=first_result.guest,
+                        is_dns=True,
+                    )
+                    dns_standings.append(standing)
+            continue
 
         # Calculate total time from completed stages
         total_time = sum(
@@ -92,10 +143,13 @@ def calculate_gc_standings(
     # Sort by total time and calculate positions
     standings = _calculate_gc_positions_and_gaps(standings)
 
+    # Add DNS riders at the bottom (no positions/gaps calculated)
+    standings.extend(dns_standings)
+
     return GCStandings(
         race_group=race_group,
         standings=standings,
-        completed_stages=completed_stages,
+        completed_stages=target_stage,
         is_provisional=is_provisional,
     )
 
