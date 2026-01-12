@@ -9,6 +9,7 @@ def calculate_gc_standings(
     race_group: str,
     completed_stages: int,
     is_provisional: bool = True,
+    include_guests: bool = False,
 ) -> GCStandings:
     """
     Calculate GC standings from all stage results.
@@ -20,6 +21,7 @@ def calculate_gc_standings(
         race_group: Race group ("A" or "B")
         completed_stages: Number of stages that have been completed
         is_provisional: Whether the tour is still in progress
+        include_guests: Whether to include guest riders in standings (default: False)
 
     Returns:
         GCStandings for the race group
@@ -34,6 +36,10 @@ def calculate_gc_standings(
 
             # Exclude uncategorized riders from GC standings
             if result.handicap_group is None:
+                continue
+
+            # Exclude guest riders from GC standings (unless explicitly included)
+            if result.guest and not include_guests:
                 continue
 
             if result.rider_id not in rider_results:
@@ -79,6 +85,7 @@ def calculate_gc_standings(
             position=0,  # Will be set after sorting
             gap_to_leader=0,  # Will be set after sorting
             is_provisional=is_provisional,
+            guest=first_result.guest,
         )
         standings.append(standing)
 
@@ -130,6 +137,7 @@ def build_tour_standings(
     current_stage: int = 1,
     last_updated: str | None = None,
     is_stage_in_progress: bool = False,
+    include_guests: bool = False,
 ) -> TourStandings:
     """
     Build complete tour standings for both groups.
@@ -141,6 +149,7 @@ def build_tour_standings(
         current_stage: Current stage number
         last_updated: Timestamp of last update
         is_stage_in_progress: Whether a stage is currently active
+        include_guests: Whether to include guest riders in standings (default: False)
 
     Returns:
         TourStandings with both groups
@@ -152,6 +161,7 @@ def build_tour_standings(
         "A",
         completed_stages,
         is_provisional,
+        include_guests,
     )
     group_a.last_updated = last_updated
 
@@ -160,6 +170,7 @@ def build_tour_standings(
         "B",
         completed_stages,
         is_provisional,
+        include_guests,
     )
     group_b.last_updated = last_updated
 

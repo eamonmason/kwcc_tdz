@@ -16,8 +16,7 @@ class Rider(BaseModel):
     zwiftpower_id: str = Field(..., description="ZwiftPower user ID")
     handicap_group: str | None = Field(
         default=None,
-        pattern=r"^[AB][1-4]$",
-        description="Handicap group (A1-A3 or B1-B4)",
+        description="Handicap group (A1-A3 or B1-B4, or None for uncategorized riders)",
     )
     zp_racing_score: int | None = Field(
         default=None, description="ZwiftPower Racing Score"

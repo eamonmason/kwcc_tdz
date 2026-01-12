@@ -66,13 +66,13 @@ class TestRider:
         rider = Rider(name="Test", zwiftpower_id="1", handicap_group=handicap_group)
         assert rider.handicap_display == expected_display
 
-    def test_invalid_handicap_group(self):
-        """Test that invalid handicap groups are rejected."""
-        with pytest.raises(ValueError):
-            Rider(name="Test", zwiftpower_id="1", handicap_group="C1")
-
-        with pytest.raises(ValueError):
-            Rider(name="Test", zwiftpower_id="1", handicap_group="A5")
+    def test_null_handicap_group(self):
+        """Test that riders can have null handicap group (uncategorized)."""
+        rider = Rider(name="Test", zwiftpower_id="1", handicap_group=None)
+        assert rider.handicap_group is None
+        assert rider.race_group is None
+        assert rider.handicap_seconds == 0
+        assert rider.handicap_display == "uncategorized"
 
 
 class TestRiderRegistry:

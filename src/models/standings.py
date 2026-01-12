@@ -21,6 +21,10 @@ class GCStanding(BaseModel):
     position: int = Field(default=0, ge=0)  # Set after sorting
     gap_to_leader: int = Field(default=0, ge=0)
     is_provisional: bool = Field(default=True)
+    guest: bool = Field(
+        default=False,
+        description="Guest rider (non-club member)",
+    )
 
     @computed_field
     @property

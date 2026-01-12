@@ -68,6 +68,7 @@ def apply_handicap_and_penalty(
         is_provisional=False,
         event_id=race_result.event_id,
         timestamp=race_result.timestamp,
+        guest=rider.guest,
     )
 
 

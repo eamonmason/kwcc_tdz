@@ -546,3 +546,97 @@ class TestProcessStageResultsWithMultipleRaces:
         # Find Rider B's result
         rider_b_result = next(r for r in group_a if r.rider_id == "2")
         assert rider_b_result.penalty_seconds == 60  # Has penalty
+
+
+class TestGuestRiderHandling:
+    """Tests for guest rider functionality."""
+
+    def test_guest_flag_propagated_to_stage_result(self):
+        """Test guest flag is carried from Rider to StageResult."""
+        guest_rider = Rider(
+            name="Guest Rider",
+            zwiftpower_id="999",
+            handicap_group="A1",
+            guest=True,
+        )
+        race_result = RaceResult(
+            rider_id="999",
+            rider_name="Guest Rider",
+            stage_number=1,
+            event_id="12345",
+            raw_time_seconds=2400,
+            finish_position=1,
+            timestamp=datetime(2026, 1, 6, 18, 0, 0),
+        )
+
+        stage_result = apply_handicap(race_result, guest_rider)
+
+        assert stage_result.guest is True
+        assert stage_result.rider_name == "Guest Rider"
+
+    def test_non_guest_rider_has_false_guest_flag(self):
+        """Test non-guest rider has guest=False by default."""
+        regular_rider = Rider(
+            name="Club Member",
+            zwiftpower_id="123",
+            handicap_group="A1",
+        )
+        race_result = RaceResult(
+            rider_id="123",
+            rider_name="Club Member",
+            stage_number=1,
+            event_id="12345",
+            raw_time_seconds=2400,
+            finish_position=1,
+            timestamp=datetime(2026, 1, 6, 18, 0, 0),
+        )
+
+        stage_result = apply_handicap(race_result, regular_rider)
+
+        assert stage_result.guest is False
+
+    def test_guest_rider_appears_in_stage_results(self):
+        """Test guest riders appear in stage results with other riders."""
+        riders = [
+            Rider(name="Club Rider", zwiftpower_id="1", handicap_group="A1"),
+            Rider(
+                name="Guest Rider",
+                zwiftpower_id="2",
+                handicap_group="A2",
+                guest=True,
+            ),
+        ]
+        registry = RiderRegistry(riders=riders)
+
+        race_results = [
+            RaceResult(
+                rider_id="1",
+                rider_name="Club Rider",
+                stage_number=1,
+                event_id="12345",
+                raw_time_seconds=2400,
+                finish_position=1,
+                timestamp=datetime(2026, 1, 6, 18, 0, 0),
+            ),
+            RaceResult(
+                rider_id="2",
+                rider_name="Guest Rider",
+                stage_number=1,
+                event_id="12345",
+                raw_time_seconds=2500,
+                finish_position=2,
+                timestamp=datetime(2026, 1, 6, 18, 0, 0),
+            ),
+        ]
+
+        group_a, _, _ = process_stage_results(
+            race_results,
+            registry,
+            stage_number=1,
+        )
+
+        assert len(group_a) == 2
+        guest_result = next(r for r in group_a if r.rider_id == "2")
+        assert guest_result.guest is True
+        club_result = next(r for r in group_a if r.rider_id == "1")
+        assert club_result.guest is False

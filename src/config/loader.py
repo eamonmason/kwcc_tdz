@@ -15,6 +15,7 @@ def load_riders_from_csv(csv_path: str | Path) -> RiderRegistry:
     - ZwiftPower ID
     - Handicap Group (A1, A2, A3, B1, B2, B3, B4)
     - ZP Racing Score (optional)
+    - Guest (Y/N, optional - defaults to N)
     - Raced TDZ before? Y/N (optional, ignored)
 
     Args:
@@ -63,11 +64,16 @@ def load_riders_from_csv(csv_path: str | Path) -> RiderRegistry:
                 except ValueError:
                     pass
 
+            # Parse guest status (optional, defaults to False)
+            guest_str = row.get("Guest", "").strip().upper()
+            is_guest = guest_str in ("Y", "YES", "TRUE", "1")
+
             rider = Rider(
                 name=name,
                 zwiftpower_id=zp_id,
                 handicap_group=handicap_group,
                 zp_racing_score=racing_score,
+                guest=is_guest,
             )
             riders.append(rider)
 

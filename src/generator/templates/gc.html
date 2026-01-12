@@ -2,6 +2,22 @@
 
 {% block title %}GC Standings | KWCC Tour de Zwift 2026{% endblock %}
 
+{% block extra_head %}
+<style>
+    .guest-indicator {
+        display: inline-block;
+        margin-left: 0.3rem;
+        padding: 0.1rem 0.4rem;
+        background: #6c757d;
+        color: white;
+        font-size: 0.7rem;
+        border-radius: 3px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="gc-header">
     <h2>General Classification</h2>
@@ -45,7 +61,12 @@
                             {{ standing.position }}
                             {% endif %}
                         </td>
-                        <td class="rider-name">{{ standing.rider_name }}</td>
+                        <td class="rider-name">
+                            {{ standing.rider_name }}
+                            {% if standing.guest %}
+                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                            {% endif %}
+                        </td>
                         <td class="handicap">{{ standing.handicap_group }}</td>
                         <td class="time total-time">{{ standing.total_time_display }}</td>
                         <td class="gap">{{ standing.gap_display }}</td>
@@ -101,7 +122,12 @@
                             {{ standing.position }}
                             {% endif %}
                         </td>
-                        <td class="rider-name">{{ standing.rider_name }}</td>
+                        <td class="rider-name">
+                            {{ standing.rider_name }}
+                            {% if standing.guest %}
+                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                            {% endif %}
+                        </td>
                         <td class="handicap">{{ standing.handicap_group }}</td>
                         <td class="time total-time">{{ standing.total_time_display }}</td>
                         <td class="gap">{{ standing.gap_display }}</td>

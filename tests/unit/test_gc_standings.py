@@ -14,6 +14,7 @@ def create_stage_result(
     race_group: str,
     handicap_group: str,
     adjusted_time: int,
+    guest: bool = False,
 ) -> StageResult:
     """Helper to create stage results for testing."""
     # Derive raw_time and handicap from adjusted_time for simplicity
@@ -27,6 +28,7 @@ def create_stage_result(
         handicap_seconds=0,
         position=1,
         raw_position=1,
+        guest=guest,
     )
 
 
@@ -302,3 +304,132 @@ class TestGCEdgeCases:
 
         # Rider should be excluded (missing stage 2)
         assert len(gc.standings) == 0
+
+
+class TestGuestRiderGCFiltering:
+    """Tests for guest rider filtering in GC standings."""
+
+    def test_guest_rider_excluded_from_gc_by_default(self):
+        """Test guest riders are excluded from GC standings by default."""
+        stage_results = {
+            1: [
+                create_stage_result("Club Rider", "1", 1, "A", "A1", 3000, guest=False),
+                create_stage_result("Guest Rider", "2", 1, "A", "A2", 2900, guest=True),
+            ]
+        }
+
+        gc = calculate_gc_standings(
+            stage_results, race_group="A", completed_stages=1, include_guests=False
+        )
+
+        # Only club rider should be in GC
+        assert len(gc.standings) == 1
+        assert gc.standings[0].rider_name == "Club Rider"
+
+    def test_guest_rider_included_when_flag_set(self):
+        """Test guest riders are included when include_guests=True."""
+        stage_results = {
+            1: [
+                create_stage_result("Club Rider", "1", 1, "A", "A1", 3000, guest=False),
+                create_stage_result("Guest Rider", "2", 1, "A", "A2", 2900, guest=True),
+            ]
+        }
+
+        gc = calculate_gc_standings(
+            stage_results, race_group="A", completed_stages=1, include_guests=True
+        )
+
+        # Both riders should be in GC
+        assert len(gc.standings) == 2
+        assert gc.standings[0].rider_name == "Guest Rider"  # Faster time
+        assert gc.standings[1].rider_name == "Club Rider"
+
+    def test_guest_flag_propagated_to_gc_standing(self):
+        """Test guest flag is carried through to GC standing."""
+        stage_results = {
+            1: [
+                create_stage_result("Guest Rider", "1", 1, "A", "A1", 3000, guest=True),
+            ]
+        }
+
+        gc = calculate_gc_standings(
+            stage_results, race_group="A", completed_stages=1, include_guests=True
+        )
+
+        assert len(gc.standings) == 1
+        assert gc.standings[0].guest is True
+
+    def test_multiple_guest_riders_excluded(self):
+        """Test multiple guest riders are all excluded by default."""
+        stage_results = {
+            1: [
+                create_stage_result("Club Rider", "1", 1, "A", "A1", 3000, guest=False),
+                create_stage_result("Guest 1", "2", 1, "A", "A2", 2900, guest=True),
+                create_stage_result("Guest 2", "3", 1, "A", "A3", 2950, guest=True),
+            ]
+        }
+
+        gc = calculate_gc_standings(
+            stage_results, race_group="A", completed_stages=1, include_guests=False
+        )
+
+        # Only club rider should be in GC
+        assert len(gc.standings) == 1
+        assert gc.standings[0].rider_name == "Club Rider"
+
+    def test_guest_rider_must_complete_all_stages_when_included(self):
+        """Test guest riders must complete all stages when included in GC."""
+        stage_results = {
+            1: [
+                create_stage_result("Guest Rider", "1", 1, "A", "A1", 3000, guest=True),
+            ],
+            2: [
+                # Guest rider did not complete stage 2
+            ],
+        }
+
+        gc = calculate_gc_standings(
+            stage_results, race_group="A", completed_stages=2, include_guests=True
+        )
+
+        # Guest rider should be excluded (didn't complete all stages)
+        assert len(gc.standings) == 0
+
+    def test_build_tour_standings_respects_guest_flag(self):
+        """Test build_tour_standings passes include_guests parameter."""
+        group_a_results = {
+            1: [
+                create_stage_result("Club A", "1", 1, "A", "A1", 3000, guest=False),
+                create_stage_result("Guest A", "2", 1, "A", "A2", 2900, guest=True),
+            ]
+        }
+        group_b_results = {
+            1: [
+                create_stage_result("Club B", "3", 1, "B", "B1", 3200, guest=False),
+                create_stage_result("Guest B", "4", 1, "B", "B2", 3100, guest=True),
+            ]
+        }
+
+        # Test with guests excluded (default)
+        tour_excluded = build_tour_standings(
+            group_a_results,
+            group_b_results,
+            completed_stages=1,
+            include_guests=False,
+        )
+
+        assert len(tour_excluded.group_a.standings) == 1
+        assert tour_excluded.group_a.standings[0].rider_name == "Club A"
+        assert len(tour_excluded.group_b.standings) == 1
+        assert tour_excluded.group_b.standings[0].rider_name == "Club B"
+
+        # Test with guests included
+        tour_included = build_tour_standings(
+            group_a_results,
+            group_b_results,
+            completed_stages=1,
+            include_guests=True,
+        )
+
+        assert len(tour_included.group_a.standings) == 2
+        assert len(tour_included.group_b.standings) == 2
