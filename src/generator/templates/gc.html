@@ -55,14 +55,15 @@
     </p>
 </div>
 
+<div class="guest-filter">
+    <input type="checkbox" id="global-show-guests" checked>
+    <label for="global-show-guests">Show guest riders</label>
+</div>
+
 <div class="gc-standings">
     <section class="group-gc" id="group-a">
         <h3>Group A - GC</h3>
         {% if group_a.standings %}
-        <div class="guest-filter">
-            <input type="checkbox" id="show-guests-gc-a" checked>
-            <label for="show-guests-gc-a">Show guest riders</label>
-        </div>
         <div class="table-wrapper">
             <table class="results-table gc-table" id="table-gc-a">
                 <thead>
@@ -125,10 +126,6 @@
     <section class="group-gc" id="group-b">
         <h3>Group B - GC</h3>
         {% if group_b.standings %}
-        <div class="guest-filter">
-            <input type="checkbox" id="show-guests-gc-b" checked>
-            <label for="show-guests-gc-b">Show guest riders</label>
-        </div>
         <div class="table-wrapper">
             <table class="results-table gc-table" id="table-gc-b">
                 <thead>
@@ -202,29 +199,39 @@
 
 {% block extra_scripts %}
 <script>
-// Guest rider filter functionality for GC
-function setupGuestFilter(checkboxId, tableId) {
-    const checkbox = document.getElementById(checkboxId);
-    const table = document.getElementById(tableId);
+// Global guest rider filter with localStorage persistence
+(function() {
+    const STORAGE_KEY = 'kwcc-tdz-show-guests';
+    const checkbox = document.getElementById('global-show-guests');
 
-    if (!checkbox || !table) return;
+    if (!checkbox) return;
 
-    checkbox.addEventListener('change', () => {
-        const showGuests = checkbox.checked;
-        const guestRows = table.querySelectorAll('tr[data-guest="true"]');
+    // Load saved state from localStorage (default to true if not set)
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    const showGuests = savedState === null ? true : savedState === 'true';
+    checkbox.checked = showGuests;
 
+    // Apply initial state to all guest rows
+    function applyGuestFilter(show) {
+        const guestRows = document.querySelectorAll('tr[data-guest="true"]');
         guestRows.forEach(row => {
-            if (showGuests) {
+            if (show) {
                 row.classList.remove('hidden');
             } else {
                 row.classList.add('hidden');
             }
         });
-    });
-}
+    }
 
-// Setup filters for both groups
-setupGuestFilter('show-guests-gc-a', 'table-gc-a');
-setupGuestFilter('show-guests-gc-b', 'table-gc-b');
+    // Apply initial state
+    applyGuestFilter(showGuests);
+
+    // Listen for changes and persist to localStorage
+    checkbox.addEventListener('change', () => {
+        const show = checkbox.checked;
+        localStorage.setItem(STORAGE_KEY, show.toString());
+        applyGuestFilter(show);
+    });
+})();
 </script>
 {% endblock %}
