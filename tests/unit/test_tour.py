@@ -1,7 +1,7 @@
 """Tests for tour configuration and registry."""
 
 import tempfile
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -77,13 +77,16 @@ class TestStage:
             route="Turf N Surf",
             distance_km=24.7,
             elevation_m=198,
-            start_date=date(2026, 1, 5),
-            end_date=date(2026, 1, 11),
+            start_datetime=datetime(2026, 1, 5, 17, 0, tzinfo=UTC),
+            end_datetime=datetime(2026, 1, 12, 16, 59, tzinfo=UTC),
         )
 
         assert stage.number == 1
         assert stage.name == "Makuri Islands"
         assert stage.distance_km == 24.7
+        # Check backwards-compatible date properties
+        assert stage.start_date == date(2026, 1, 5)
+        assert stage.end_date == date(2026, 1, 12)
 
     def test_stage_number_validation(self):
         """Test stage number must be 1-6."""
@@ -94,8 +97,8 @@ class TestStage:
                 route="Test",
                 distance_km=20.0,
                 elevation_m=100,
-                start_date=date(2026, 1, 5),
-                end_date=date(2026, 1, 11),
+                start_datetime=datetime(2026, 1, 5, 17, 0, tzinfo=UTC),
+                end_datetime=datetime(2026, 1, 11, 16, 59, tzinfo=UTC),
             )
 
         with pytest.raises(ValueError):
@@ -105,8 +108,8 @@ class TestStage:
                 route="Test",
                 distance_km=20.0,
                 elevation_m=100,
-                start_date=date(2026, 1, 5),
-                end_date=date(2026, 1, 11),
+                start_datetime=datetime(2026, 1, 5, 17, 0, tzinfo=UTC),
+                end_datetime=datetime(2026, 1, 11, 16, 59, tzinfo=UTC),
             )
 
 

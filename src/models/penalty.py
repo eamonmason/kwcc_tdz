@@ -101,3 +101,42 @@ def format_penalty(seconds: int) -> str:
     if minutes == 0:
         return f"+{seconds}s"
     return f"+{minutes}m"
+
+
+def calculate_penalty_from_events(
+    event_datetime: datetime,
+    penalty_events: list[PenaltyEvent],
+) -> int:
+    """
+    Calculate penalty in seconds from a list of penalty events.
+
+    This function is used for per-course penalty calculation where each
+    course can have its own set of penalty events.
+
+    Args:
+        event_datetime: DateTime of the event
+        penalty_events: List of penalty events to check against
+
+    Returns:
+        Penalty in seconds (0 if no penalty applies)
+    """
+    event_day = event_datetime.weekday()
+    event_time = event_datetime.time()
+
+    for penalty_event in penalty_events:
+        if penalty_event.day_of_week != event_day:
+            continue
+
+        # Check if event time is within 15 minutes of penalty event time
+        penalty_start = datetime.combine(
+            event_datetime.date(), penalty_event.event_time_utc
+        )
+        event_dt = datetime.combine(event_datetime.date(), event_time)
+
+        time_diff = abs((event_dt - penalty_start).total_seconds())
+
+        # Allow 15 minute tolerance for event start times
+        if time_diff <= 900:  # 15 minutes
+            return penalty_event.penalty_seconds
+
+    return 0

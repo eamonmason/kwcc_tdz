@@ -1,14 +1,21 @@
 """Handicap and penalty calculation and result processing."""
 
-from src.models.penalty import DEFAULT_PENALTY_CONFIG, PenaltyConfig
+from src.models.penalty import (
+    DEFAULT_PENALTY_CONFIG,
+    PenaltyConfig,
+    PenaltyEvent,
+    calculate_penalty_from_events,
+)
 from src.models.result import RaceResult, StageResult
 from src.models.rider import Rider, RiderRegistry
+from src.models.tour import Stage
 
 
 def apply_handicap_and_penalty(
     race_result: RaceResult,
     rider: Rider,
     penalty_config: PenaltyConfig | None = None,
+    penalty_events: list[PenaltyEvent] | None = None,
 ) -> StageResult:
     """
     Apply handicap and penalty adjustments to a race result.
@@ -16,7 +23,8 @@ def apply_handicap_and_penalty(
     Args:
         race_result: Raw race result from ZwiftPower
         rider: Rider with handicap information
-        penalty_config: Optional penalty configuration
+        penalty_config: Optional penalty configuration (legacy, used if penalty_events not provided)
+        penalty_events: Optional list of penalty events for per-course penalties (preferred)
 
     Returns:
         StageResult with handicap and penalty applied
@@ -24,11 +32,20 @@ def apply_handicap_and_penalty(
     penalty_seconds = 0
     penalty_reason = ""
 
-    if penalty_config and race_result.timestamp:
-        penalty_seconds = penalty_config.get_penalty(
-            race_result.timestamp,
-            race_result.stage_number,
-        )
+    if race_result.timestamp:
+        # Prefer per-course penalty_events if provided
+        if penalty_events:
+            penalty_seconds = calculate_penalty_from_events(
+                race_result.timestamp,
+                penalty_events,
+            )
+        elif penalty_config:
+            # Fall back to legacy penalty config
+            penalty_seconds = penalty_config.get_penalty(
+                race_result.timestamp,
+                race_result.stage_number,
+            )
+
         if penalty_seconds > 0:
             # Determine penalty reason from event time
             event_hour = race_result.timestamp.hour
@@ -69,6 +86,7 @@ def process_stage_results(
     stage_number: int,  # noqa: ARG001
     is_provisional: bool = False,
     penalty_config: PenaltyConfig | None = None,
+    stage: Stage | None = None,
 ) -> tuple[list[StageResult], list[StageResult]]:
     """
     Process race results into stage results with handicaps and penalties.
@@ -82,12 +100,13 @@ def process_stage_results(
         rider_registry: Registry of all KWCC riders
         stage_number: Stage number being processed
         is_provisional: Whether results are still provisional
-        penalty_config: Optional penalty configuration (defaults to standard)
+        penalty_config: Optional penalty configuration (defaults to standard, used as fallback)
+        stage: Optional Stage object for per-course penalty lookup (preferred)
 
     Returns:
         Tuple of (group_a_results, group_b_results), sorted by adjusted time
     """
-    # Use default penalty config if not provided
+    # Use default penalty config as fallback if not provided
     if penalty_config is None:
         penalty_config = DEFAULT_PENALTY_CONFIG
 
@@ -100,7 +119,17 @@ def process_stage_results(
         if not rider:
             continue
 
-        stage_result = apply_handicap_and_penalty(race_result, rider, penalty_config)
+        # Get per-course penalty events if stage is provided
+        penalty_events = None
+        if stage and race_result.event_id:
+            penalty_events = stage.get_penalty_events_for_event(race_result.event_id)
+
+        stage_result = apply_handicap_and_penalty(
+            race_result,
+            rider,
+            penalty_config=penalty_config if not penalty_events else None,
+            penalty_events=penalty_events,
+        )
         stage_result.is_provisional = is_provisional
 
         if rider.race_group == "A":

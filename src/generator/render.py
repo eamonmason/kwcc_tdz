@@ -195,12 +195,20 @@ class WebsiteGenerator:
             r.is_provisional for r in group_a_results + group_b_results
         )
 
+        # Get courses and check for penalty events
+        courses = stage.courses if stage else []
+        has_penalty_events = any(c.has_penalties for c in courses)
+
         context = {
             "stage_number": stage_number,
             "stage_name": stage.name if stage else f"Stage {stage_number}",
-            "route": stage.route if stage else "",
-            "distance_km": stage.distance_km if stage else 0,
-            "elevation_m": stage.elevation_m if stage else 0,
+            # Use display properties that handle legacy and new course formats
+            "route": stage.display_route if stage else "",
+            "distance_km": stage.display_distance_km if stage else 0,
+            "elevation_m": stage.display_elevation_m if stage else 0,
+            # Course information for multi-course stages
+            "courses": courses,
+            "has_penalty_events": has_penalty_events,
             "group_a_results": group_a_results,
             "group_b_results": group_b_results,
             "is_provisional": is_provisional,
