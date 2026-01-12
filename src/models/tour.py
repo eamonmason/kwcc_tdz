@@ -215,8 +215,8 @@ TOUR_STAGES: list[Stage] = [
         courses=[
             Course(
                 route="Yorkshire Double Loop",
-                distance_km=0,
-                elevation_m=0,
+                distance_km=31.2,
+                elevation_m=352,
                 option_letter="B",
                 zwiftinsider_url="https://zwiftinsider.com/route/yorkshire-double-loop/",
                 zwiftpower_search_url="https://zwiftpower.com/events.php?search=tour+de+zwift+stage+3",

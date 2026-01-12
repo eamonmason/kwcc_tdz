@@ -64,11 +64,13 @@ def get_tour_config(event_ids_path: str | Path | None = None) -> TourConfig:
         stage = Stage(
             number=base_stage.number,
             name=base_stage.name,
+            courses=base_stage.courses,
+            start_datetime=base_stage.start_datetime,
+            end_datetime=base_stage.end_datetime,
+            # Legacy fields for backwards compatibility
             route=base_stage.route,
             distance_km=base_stage.distance_km,
             elevation_m=base_stage.elevation_m,
-            start_date=base_stage.start_date,
-            end_date=base_stage.end_date,
             event_ids=stage_event_ids,
         )
         stages.append(stage)
