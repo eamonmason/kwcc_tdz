@@ -32,6 +32,10 @@ def calculate_gc_standings(
             if result.race_group != race_group:
                 continue
 
+            # Exclude uncategorized riders from GC standings
+            if result.handicap_group is None:
+                continue
+
             if result.rider_id not in rider_results:
                 rider_results[result.rider_id] = {}
             rider_results[result.rider_id][stage_num] = result

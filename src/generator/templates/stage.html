@@ -11,6 +11,17 @@
     .sortable.desc::after { content: ' ↓'; opacity: 1; }
     .penalty-indicator { color: #dc3545; font-weight: bold; }
     .penalty-row { background-color: rgba(220, 53, 69, 0.05); }
+    .guest-indicator {
+        display: inline-block;
+        margin-left: 0.3rem;
+        padding: 0.1rem 0.4rem;
+        background: #6c757d;
+        color: white;
+        font-size: 0.7rem;
+        border-radius: 3px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
 
     /* Course info styles */
     .course-info {
@@ -124,11 +135,6 @@
                     Route Info (Zwiftinsider)
                 </a>
                 {% endif %}
-                {% if course.zwiftpower_search_url %}
-                <a href="{{ course.zwiftpower_search_url }}" target="_blank" rel="noopener" class="course-link">
-                    Upcoming Events (ZwiftPower)
-                </a>
-                {% endif %}
             </div>
             {% if course.has_penalties %}
             <div class="course-penalties">
@@ -205,6 +211,9 @@
                         </td>
                         <td class="rider-name">
                             {{ result.rider_name }}
+                            {% if result.guest %}
+                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                            {% endif %}
                             {% if result.has_penalty %}
                             <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
                             {% endif %}
@@ -280,6 +289,9 @@
                         </td>
                         <td class="rider-name">
                             {{ result.rider_name }}
+                            {% if result.guest %}
+                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                            {% endif %}
                             {% if result.has_penalty %}
                             <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
                             {% endif %}
@@ -313,6 +325,69 @@
         <p class="no-results">No results yet for Group B</p>
         {% endif %}
     </section>
+
+    {% if uncategorized_results %}
+    <section class="group-results" id="uncategorized">
+        <h3>Uncategorized Riders</h3>
+        <p class="info-text" style="color: #6c757d; font-size: 0.9rem; margin-bottom: 1rem;">
+            These riders have not been assigned a handicap group and are not included in GC standings.
+        </p>
+        <div class="table-wrapper">
+            <table class="results-table sortable-table" id="table-uncategorized">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="position" data-type="number">Pos</th>
+                        <th class="sortable" data-sort="rider_name" data-type="string">Rider</th>
+                        <th class="sortable" data-sort="raw_time_seconds" data-type="number">Raw Time</th>
+                        <th class="sortable" data-sort="penalty_seconds" data-type="number">Penalty</th>
+                        <th class="sortable" data-sort="adjusted_time_seconds" data-type="number">Adjusted Time</th>
+                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in uncategorized_results %}
+                    <tr class="{% if result.has_penalty %} penalty-row{% endif %}"
+                        data-position="{{ result.position }}"
+                        data-rider_name="{{ result.rider_name }}"
+                        data-raw_time_seconds="{{ result.raw_time_seconds }}"
+                        data-penalty_seconds="{{ result.penalty_seconds }}"
+                        data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
+                        data-gap_to_leader="{{ result.gap_to_leader }}">
+                        <td class="position">{{ result.position }}</td>
+                        <td class="rider-name">
+                            {{ result.rider_name }}
+                            {% if result.guest %}
+                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                            {% endif %}
+                            {% if result.has_penalty %}
+                            <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
+                            {% endif %}
+                        </td>
+                        <td class="time raw-time">
+                            {% if result.event_id %}
+                            <a href="https://zwiftpower.com/events.php?zid={{ result.event_id }}" target="_blank" title="View event on ZwiftPower">
+                                {{ result.raw_time_display }}
+                            </a>
+                            {% else %}
+                            {{ result.raw_time_display }}
+                            {% endif %}
+                        </td>
+                        <td class="time penalty {% if result.has_penalty %}penalty-indicator{% endif %}">
+                            {{ result.penalty_display }}
+                            {% if result.penalty_reason %}
+                            <span class="penalty-tooltip" title="{{ result.penalty_reason }}">&#9432;</span>
+                            {% endif %}
+                        </td>
+                        <td class="time adjusted-time"><strong>{{ result.adjusted_time_display }}</strong></td>
+                        <td class="gap">{{ result.gap_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="results-count">{{ uncategorized_results|length }} riders completed</p>
+    </section>
+    {% endif %}
 </div>
 
 <section class="penalty-legend">

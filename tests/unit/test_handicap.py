@@ -205,7 +205,7 @@ class TestProcessStageResults:
         """Test results are split into Group A and Group B."""
         registry = RiderRegistry(riders=sample_riders)
 
-        group_a, group_b = process_stage_results(
+        group_a, group_b, _ = process_stage_results(
             sample_race_results,
             registry,
             stage_number=1,
@@ -221,7 +221,7 @@ class TestProcessStageResults:
         """Test positions are calculated correctly after handicap."""
         registry = RiderRegistry(riders=sample_riders)
 
-        group_a, _ = process_stage_results(
+        group_a, _, _ = process_stage_results(
             sample_race_results,
             registry,
             stage_number=1,
@@ -236,7 +236,7 @@ class TestProcessStageResults:
         """Test gaps to leader are calculated correctly."""
         registry = RiderRegistry(riders=sample_riders)
 
-        group_a, _ = process_stage_results(
+        group_a, _, _ = process_stage_results(
             sample_race_results,
             registry,
             stage_number=1,
@@ -262,7 +262,7 @@ class TestProcessStageResults:
             ),
         ]
 
-        group_a, _ = process_stage_results(
+        group_a, _, _ = process_stage_results(
             race_results,
             registry,
             stage_number=1,
@@ -297,7 +297,7 @@ class TestProcessStageResults:
             ),
         ]
 
-        group_a, group_b = process_stage_results(
+        group_a, group_b, _ = process_stage_results(
             race_results,
             registry,
             stage_number=1,
@@ -310,7 +310,7 @@ class TestProcessStageResults:
         """Test provisional flag is set on results."""
         registry = RiderRegistry(riders=sample_riders)
 
-        group_a, group_b = process_stage_results(
+        group_a, group_b, _ = process_stage_results(
             sample_race_results,
             registry,
             stage_number=1,
@@ -469,7 +469,7 @@ class TestProcessStageResultsWithMultipleRaces:
             ),
         ]
 
-        _group_a, group_b = process_stage_results(
+        _group_a, group_b, _ = process_stage_results(
             race_results,
             registry,
             stage_number=1,
@@ -528,7 +528,7 @@ class TestProcessStageResultsWithMultipleRaces:
             ),
         ]
 
-        group_a, group_b = process_stage_results(
+        group_a, group_b, _ = process_stage_results(
             race_results,
             registry,
             stage_number=1,

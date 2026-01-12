@@ -87,7 +87,7 @@ def process_stage_results(
     is_provisional: bool = False,
     penalty_config: PenaltyConfig | None = None,
     stage: Stage | None = None,
-) -> tuple[list[StageResult], list[StageResult]]:
+) -> tuple[list[StageResult], list[StageResult], list[StageResult]]:
     """
     Process race results into stage results with handicaps and penalties.
 
@@ -104,7 +104,7 @@ def process_stage_results(
         stage: Optional Stage object for per-course penalty lookup (preferred)
 
     Returns:
-        Tuple of (group_a_results, group_b_results), sorted by adjusted time
+        Tuple of (group_a_results, group_b_results, uncategorized_results), sorted by adjusted time
     """
     # Use default penalty config as fallback if not provided
     if penalty_config is None:
@@ -113,6 +113,7 @@ def process_stage_results(
     # Filter and process only KWCC riders
     group_a_results: list[StageResult] = []
     group_b_results: list[StageResult] = []
+    uncategorized_results: list[StageResult] = []
 
     for race_result in race_results:
         rider = rider_registry.get_by_zwiftpower_id(race_result.rider_id)
@@ -134,18 +135,23 @@ def process_stage_results(
 
         if rider.race_group == "A":
             group_a_results.append(stage_result)
-        else:
+        elif rider.race_group == "B":
             group_b_results.append(stage_result)
+        else:
+            # Uncategorized rider (no handicap group assigned)
+            uncategorized_results.append(stage_result)
 
     # Keep only best result per rider (based on adjusted time including penalties)
     group_a_results = get_best_result_per_rider(group_a_results)
     group_b_results = get_best_result_per_rider(group_b_results)
+    uncategorized_results = get_best_result_per_rider(uncategorized_results)
 
     # Sort by adjusted time and calculate positions/gaps
     group_a_results = _calculate_positions_and_gaps(group_a_results)
     group_b_results = _calculate_positions_and_gaps(group_b_results)
+    uncategorized_results = _calculate_positions_and_gaps(uncategorized_results)
 
-    return group_a_results, group_b_results
+    return group_a_results, group_b_results, uncategorized_results
 
 
 def _calculate_positions_and_gaps(results: list[StageResult]) -> list[StageResult]:

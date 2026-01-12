@@ -33,8 +33,8 @@ class StageResult(BaseModel):
     rider_name: str = Field(..., description="Rider display name")
     rider_id: str = Field(..., description="ZwiftPower user ID")
     stage_number: int = Field(..., ge=1, le=6)
-    race_group: str = Field(..., pattern=r"^[AB]$")
-    handicap_group: str = Field(..., pattern=r"^[AB][1-4]$")
+    race_group: str | None = Field(default=None, pattern=r"^[AB]$")
+    handicap_group: str | None = Field(default=None, pattern=r"^[AB][1-4]$")
     raw_time_seconds: int = Field(..., ge=0)
     handicap_seconds: int = Field(..., ge=0)
     penalty_seconds: int = Field(default=0, ge=0, description="Event penalty time")
@@ -45,6 +45,10 @@ class StageResult(BaseModel):
     is_provisional: bool = Field(default=False)
     event_id: str = Field(default="")
     timestamp: datetime | None = Field(default=None)
+    guest: bool = Field(
+        default=False,
+        description="Guest rider (non-club member, excluded from GC by default)",
+    )
 
     @computed_field
     @property
@@ -68,6 +72,8 @@ class StageResult(BaseModel):
     @property
     def handicap_display(self) -> str:
         """Format handicap time."""
+        if self.handicap_group is None:
+            return "uncat"
         minutes = self.handicap_seconds // 60
         if minutes == 0:
             return "scratch"

@@ -175,6 +175,7 @@ class WebsiteGenerator:
         group_b_results: list[StageResult],
         tour_config: TourConfig,
         last_updated: str | None = None,
+        uncategorized_results: list[StageResult] | None = None,
     ) -> Path:
         """
         Generate stage results page.
@@ -185,15 +186,18 @@ class WebsiteGenerator:
             group_b_results: Group B stage results
             tour_config: Tour configuration
             last_updated: Last update timestamp
+            uncategorized_results: Uncategorized rider results (not in GC)
 
         Returns:
             Path to generated file
         """
         stage = tour_config.get_stage(stage_number)
 
-        is_provisional = any(
-            r.is_provisional for r in group_a_results + group_b_results
-        )
+        all_results = group_a_results + group_b_results
+        if uncategorized_results:
+            all_results += uncategorized_results
+
+        is_provisional = any(r.is_provisional for r in all_results)
 
         # Get courses and check for penalty events
         courses = stage.courses if stage else []
@@ -211,6 +215,7 @@ class WebsiteGenerator:
             "has_penalty_events": has_penalty_events,
             "group_a_results": group_a_results,
             "group_b_results": group_b_results,
+            "uncategorized_results": uncategorized_results or [],
             "is_provisional": is_provisional,
             "last_updated": last_updated,
         }
@@ -220,7 +225,9 @@ class WebsiteGenerator:
 
     def generate_all(
         self,
-        stage_results: dict[int, tuple[list[StageResult], list[StageResult]]],
+        stage_results: dict[
+            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+        ],
         tour_standings: TourStandings,
         tour_config: TourConfig,
     ) -> list[Path]:
@@ -228,7 +235,7 @@ class WebsiteGenerator:
         Generate all website pages.
 
         Args:
-            stage_results: Dict mapping stage number to (group_a, group_b) results
+            stage_results: Dict mapping stage number to (group_a, group_b, uncategorized) results
             tour_standings: Current tour standings
             tour_config: Tour configuration
 
@@ -247,7 +254,7 @@ class WebsiteGenerator:
         generated_files.append(self.generate_gc_page(tour_standings, tour_config))
 
         # Generate stage pages
-        for stage_num, (group_a, group_b) in stage_results.items():
+        for stage_num, (group_a, group_b, uncategorized) in stage_results.items():
             generated_files.append(
                 self.generate_stage_page(
                     stage_num,
@@ -255,6 +262,7 @@ class WebsiteGenerator:
                     group_b,
                     tour_config,
                     tour_standings.last_updated,
+                    uncategorized,
                 )
             )
 
@@ -268,6 +276,7 @@ class WebsiteGenerator:
                         [],
                         tour_config,
                         tour_standings.last_updated,
+                        [],
                     )
                 )
 

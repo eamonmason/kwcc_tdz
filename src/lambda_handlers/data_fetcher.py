@@ -193,12 +193,13 @@ def handler(event, context):  # noqa: ARG001
 
         if race_results:
             # Process results with handicaps and penalties
-            group_a, group_b = process_stage_results(
+            group_a, group_b, uncategorized = process_stage_results(
                 race_results,
                 rider_registry,
                 current_stage.number,
                 is_provisional=is_provisional,
                 penalty_config=DEFAULT_PENALTY_CONFIG,
+                stage=current_stage,
             )
 
             # Save to S3
@@ -206,9 +207,19 @@ def handler(event, context):  # noqa: ARG001
             save_results_to_s3(data_bucket, current_stage.number, "A", group_a, tour_id)
             save_results_to_s3(data_bucket, current_stage.number, "B", group_b, tour_id)
 
+            # Save uncategorized results if any
+            if uncategorized:
+                save_results_to_s3(
+                    data_bucket,
+                    current_stage.number,
+                    "uncategorized",
+                    uncategorized,
+                    tour_id,
+                )
+
             logger.info(
                 f"Processed Stage {current_stage.number}: "
-                f"{len(group_a)} Group A, {len(group_b)} Group B"
+                f"{len(group_a)} Group A, {len(group_b)} Group B, {len(uncategorized)} Uncategorized"
             )
 
             # Trigger processor Lambda to regenerate website

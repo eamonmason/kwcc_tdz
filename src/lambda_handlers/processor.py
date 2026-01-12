@@ -42,10 +42,15 @@ def load_stage_results_from_s3(
 def load_all_results_from_s3(
     bucket: str,
     tour_id: str = "tdz-2026",
-) -> tuple[dict[int, list[StageResult]], dict[int, list[StageResult]]]:
+) -> tuple[
+    dict[int, list[StageResult]],
+    dict[int, list[StageResult]],
+    dict[int, list[StageResult]],
+]:
     """Load all stage results from S3."""
     group_a_results: dict[int, list[StageResult]] = {}
     group_b_results: dict[int, list[StageResult]] = {}
+    uncategorized_results: dict[int, list[StageResult]] = {}
 
     for stage in range(1, 7):
         a_results = load_stage_results_from_s3(bucket, stage, "A", tour_id)
@@ -56,7 +61,13 @@ def load_all_results_from_s3(
         if b_results:
             group_b_results[stage] = b_results
 
-    return group_a_results, group_b_results
+        uncat_results = load_stage_results_from_s3(
+            bucket, stage, "uncategorized", tour_id
+        )
+        if uncat_results:
+            uncategorized_results[stage] = uncat_results
+
+    return group_a_results, group_b_results, uncategorized_results
 
 
 def upload_directory_to_s3(local_dir: str, bucket: str) -> int:
@@ -138,13 +149,14 @@ def handler(event, context):  # noqa: ARG001
         tour_id = tour_config.tour_id
 
         # Load all results from S3
-        group_a_results, group_b_results = load_all_results_from_s3(
-            data_bucket, tour_id
+        group_a_results, group_b_results, uncategorized_results = (
+            load_all_results_from_s3(data_bucket, tour_id)
         )
 
         logger.info(
             f"Loaded results for {tour_id}: {len(group_a_results)} stages with Group A, "
-            f"{len(group_b_results)} stages with Group B"
+            f"{len(group_b_results)} stages with Group B, "
+            f"{len(uncategorized_results)} stages with Uncategorized"
         )
 
         # Calculate completed stages based on data
@@ -183,8 +195,9 @@ def handler(event, context):  # noqa: ARG001
             for stage in range(1, 7):
                 group_a = group_a_results.get(stage, [])
                 group_b = group_b_results.get(stage, [])
-                if group_a or group_b:
-                    stage_results[stage] = (group_a, group_b)
+                uncat = uncategorized_results.get(stage, [])
+                if group_a or group_b or uncat:
+                    stage_results[stage] = (group_a, group_b, uncat)
 
             # Generate all pages
             generated_files = generator.generate_all(

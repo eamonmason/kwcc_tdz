@@ -14,23 +14,33 @@ class Rider(BaseModel):
 
     name: str = Field(..., description="Rider's display name")
     zwiftpower_id: str = Field(..., description="ZwiftPower user ID")
-    handicap_group: str = Field(
-        ..., pattern=r"^[AB][1-4]$", description="Handicap group (A1-A3 or B1-B4)"
+    handicap_group: str | None = Field(
+        default=None,
+        pattern=r"^[AB][1-4]$",
+        description="Handicap group (A1-A3 or B1-B4)",
     )
     zp_racing_score: int | None = Field(
         default=None, description="ZwiftPower Racing Score"
     )
+    guest: bool = Field(
+        default=False,
+        description="Guest rider (non-club member, excluded from GC by default)",
+    )
 
     @computed_field
     @property
-    def race_group(self) -> str:
+    def race_group(self) -> str | None:
         """Extract race group (A or B) from handicap group."""
+        if self.handicap_group is None:
+            return None
         return self.handicap_group[0]
 
     @computed_field
     @property
     def handicap_seconds(self) -> int:
         """Get handicap time in seconds based on group."""
+        if self.handicap_group is None:
+            return 0
         group = self.race_group
         return HANDICAPS[group].get(self.handicap_group, 0)
 
@@ -38,6 +48,8 @@ class Rider(BaseModel):
     @property
     def handicap_display(self) -> str:
         """Human-readable handicap time."""
+        if self.handicap_group is None:
+            return "uncategorized"
         minutes = self.handicap_seconds // 60
         if minutes == 0:
             return "scratch"
@@ -77,3 +89,11 @@ class RiderRegistry(BaseModel):
     def group_b_riders(self) -> list[Rider]:
         """All Group B riders."""
         return self.get_group_riders("B")
+
+    def get_non_guest_riders(self) -> list[Rider]:
+        """Get all non-guest (club member) riders."""
+        return [r for r in self.riders if not r.guest]
+
+    def get_guest_riders(self) -> list[Rider]:
+        """Get all guest riders."""
+        return [r for r in self.riders if r.guest]
