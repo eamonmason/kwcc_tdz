@@ -23,6 +23,32 @@
         text-transform: uppercase;
     }
 
+    .guest-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .guest-filter input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .guest-filter label {
+        cursor: pointer;
+        user-select: none;
+        margin: 0;
+    }
+
+    tr.guest-row.hidden {
+        display: none;
+    }
+
     /* Course info styles */
     .course-info {
         display: flex;
@@ -173,6 +199,10 @@
     <section class="group-results" id="group-a">
         <h3>Group A Results</h3>
         {% if group_a_results %}
+        <div class="guest-filter">
+            <input type="checkbox" id="show-guests-a" checked>
+            <label for="show-guests-a">Show guest riders</label>
+        </div>
         <div class="table-wrapper">
             <table class="results-table sortable-table" id="table-group-a">
                 <thead>
@@ -189,7 +219,7 @@
                 </thead>
                 <tbody>
                     {% for result in group_a_results %}
-                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}"
+                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}{% if result.guest %} guest-row{% endif %}"
                         data-position="{{ result.position }}"
                         data-rider_name="{{ result.rider_name }}"
                         data-handicap_group="{{ result.handicap_group }}"
@@ -197,7 +227,8 @@
                         data-handicap_seconds="{{ result.handicap_seconds }}"
                         data-penalty_seconds="{{ result.penalty_seconds }}"
                         data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
-                        data-gap_to_leader="{{ result.gap_to_leader }}">
+                        data-gap_to_leader="{{ result.gap_to_leader }}"
+                        data-guest="{{ 'true' if result.guest else 'false' }}">
                         <td class="position">
                             {% if result.position == 1 %}
                             <span class="medal gold">&#129351;</span>
@@ -251,6 +282,10 @@
     <section class="group-results" id="group-b">
         <h3>Group B Results</h3>
         {% if group_b_results %}
+        <div class="guest-filter">
+            <input type="checkbox" id="show-guests-b" checked>
+            <label for="show-guests-b">Show guest riders</label>
+        </div>
         <div class="table-wrapper">
             <table class="results-table sortable-table" id="table-group-b">
                 <thead>
@@ -267,7 +302,7 @@
                 </thead>
                 <tbody>
                     {% for result in group_b_results %}
-                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}"
+                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}{% if result.guest %} guest-row{% endif %}"
                         data-position="{{ result.position }}"
                         data-rider_name="{{ result.rider_name }}"
                         data-handicap_group="{{ result.handicap_group }}"
@@ -275,7 +310,8 @@
                         data-handicap_seconds="{{ result.handicap_seconds }}"
                         data-penalty_seconds="{{ result.penalty_seconds }}"
                         data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
-                        data-gap_to_leader="{{ result.gap_to_leader }}">
+                        data-gap_to_leader="{{ result.gap_to_leader }}"
+                        data-guest="{{ 'true' if result.guest else 'false' }}">
                         <td class="position">
                             {% if result.position == 1 %}
                             <span class="medal gold">&#129351;</span>
@@ -446,5 +482,30 @@ document.querySelectorAll('.sortable-table').forEach(table => {
         });
     });
 });
+
+// Guest rider filter functionality
+function setupGuestFilter(checkboxId, tableId) {
+    const checkbox = document.getElementById(checkboxId);
+    const table = document.getElementById(tableId);
+
+    if (!checkbox || !table) return;
+
+    checkbox.addEventListener('change', () => {
+        const showGuests = checkbox.checked;
+        const guestRows = table.querySelectorAll('tr[data-guest="true"]');
+
+        guestRows.forEach(row => {
+            if (showGuests) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    });
+}
+
+// Setup filters for both groups
+setupGuestFilter('show-guests-a', 'table-group-a');
+setupGuestFilter('show-guests-b', 'table-group-b');
 </script>
 {% endblock %}

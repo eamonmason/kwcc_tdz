@@ -173,7 +173,7 @@ def handler(event, context):  # noqa: ARG001
             current_stage = min(completed_stages, 6) if completed_stages > 0 else 1
             is_stage_in_progress = False
 
-        # Build tour standings
+        # Build tour standings (include guests for client-side filtering)
         last_updated = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
         tour_standings = build_tour_standings(
             group_a_results,
@@ -182,6 +182,7 @@ def handler(event, context):  # noqa: ARG001
             current_stage,
             last_updated,
             is_stage_in_progress,
+            include_guests=True,  # Include guests so they can be toggled on/off
         )
 
         # Generate website
