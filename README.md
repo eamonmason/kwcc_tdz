@@ -15,6 +15,10 @@ A Python-based web application to track KWCC cycling club's internal Tour de Zwi
 - **Automated Updates**: Cron-based hourly updates at :05 past each hour
 - **Multi-Year Support**: Handles multiple tour years (e.g., TdZ 2026, TdZ 2027)
 
+### Known Limitations
+
+- **Rider Avatars**: ZwiftPower profile images cannot be automatically downloaded due to access restrictions on their CDN (HTTP 403). The website templates include avatar placeholders that will hide gracefully if images are unavailable.
+
 ## Handicap System
 
 ### Group A
