@@ -31,8 +31,8 @@
         <a href="stage_{{ stage.number }}.html" class="stage-card {% if stage.is_active %}active{% elif stage.is_complete %}complete{% else %}upcoming{% endif %}">
             <div class="stage-number">Stage {{ stage.number }}</div>
             <div class="stage-name">{{ stage.name }}</div>
-            <div class="stage-route">{{ stage.route }}</div>
-            <div class="stage-info">{{ stage.distance_km }}km | {{ stage.elevation_m }}m</div>
+            <div class="stage-route">{{ stage.display_route }}</div>
+            <div class="stage-info">{{ stage.display_distance_km }}km | {{ stage.display_elevation_m }}m</div>
             {% if stage.is_active %}
             <span class="stage-status">IN PROGRESS</span>
             {% elif stage.is_complete %}
