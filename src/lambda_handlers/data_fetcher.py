@@ -174,6 +174,42 @@ def handler(event, context):  # noqa: ARG001
         for course in current_stage.courses:
             event_names.update(course.event_names)
 
+        # Fetch event names from ZwiftPower if not in course config
+        # This is needed for race penalty detection
+        if stage_event_ids:
+            missing_names = [eid for eid in stage_event_ids if eid not in event_names]
+            if missing_names:
+                logger.info(
+                    f"Fetching event names for {len(missing_names)} events "
+                    "for race penalty detection"
+                )
+                try:
+                    with ZwiftPowerClient(username, password) as client:
+                        try:
+                            client.authenticate()
+                        except Exception as e:
+                            logger.warning(f"Authentication failed: {e}")
+
+                        from src.fetcher.events import search_events_api
+
+                        # Search for recent Tour de Zwift events
+                        discovered_events = search_events_api(
+                            client, "Tour de Zwift", days=14
+                        )
+
+                        # Map event IDs to names
+                        for event in discovered_events:
+                            event_id = event.get("id")
+                            if event_id in missing_names:
+                                event_names[event_id] = event.get("name", "")
+
+                        logger.info(
+                            f"Fetched names for {len([e for e in missing_names if e in event_names])} "
+                            f"of {len(missing_names)} events"
+                        )
+                except Exception as e:
+                    logger.warning(f"Failed to fetch event names: {e}")
+
         # If no event IDs configured, try dynamic discovery
         if not stage_event_ids:
             logger.info(
