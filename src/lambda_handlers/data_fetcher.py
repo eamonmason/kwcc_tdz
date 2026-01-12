@@ -203,10 +203,46 @@ def handler(event, context):  # noqa: ARG001
                             if event_id in missing_names:
                                 event_names[event_id] = event.get("name", "")
 
-                        logger.info(
-                            f"Fetched names for {len([e for e in missing_names if e in event_names])} "
-                            f"of {len(missing_names)} events"
+                        found_count = len(
+                            [e for e in missing_names if e in event_names]
                         )
+                        logger.info(
+                            f"Fetched names for {found_count} of {len(missing_names)} events via search"
+                        )
+
+                        # For remaining events without names, try fetching individually
+                        # Limit to first 150 events to avoid Lambda timeout
+                        still_missing = [
+                            eid for eid in missing_names if eid not in event_names
+                        ]
+                        if still_missing:
+                            max_individual_fetches = min(150, len(still_missing))
+                            logger.info(
+                                f"Fetching event details individually for up to {max_individual_fetches} "
+                                f"of {len(still_missing)} remaining events"
+                            )
+                            from src.fetcher.events import get_event_details
+
+                            # Fetch in batches to avoid timeouts
+                            individual_count = 0
+                            for event_id in still_missing[:max_individual_fetches]:
+                                try:
+                                    details = get_event_details(client, event_id)
+                                    event_names[event_id] = details.get("title", "")
+                                    individual_count += 1
+                                except Exception as e:
+                                    logger.debug(
+                                        f"Failed to fetch details for event {event_id}: {e}"
+                                    )
+                                    continue
+
+                            logger.info(
+                                f"Fetched names for {individual_count} additional events individually"
+                            )
+                            logger.info(
+                                f"Total: {found_count + individual_count} of {len(missing_names)} events have names"
+                            )
+
                 except Exception as e:
                     logger.warning(f"Failed to fetch event names: {e}")
 
