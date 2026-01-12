@@ -69,12 +69,17 @@ kwcc_tdz/
 
 ## Data Flow
 
-1. **EventBridge** triggers `data-fetcher` Lambda hourly
-2. Lambda fetches results from ZwiftPower API
-3. Results processed with handicaps and penalties
-4. Stored as JSON in S3 (`results/tdz-2026/stage_X_group_Y.json`)
-5. `processor` Lambda generates static HTML
-6. Website uploaded to S3, CloudFront cache invalidated
+1. **EventBridge** triggers `data-fetcher` Lambda hourly at :05 past each hour
+2. Lambda checks for event IDs in S3, or dynamically discovers them from ZwiftPower API
+3. Lambda fetches results from ZwiftPower API for all discovered events
+4. Results processed:
+   - Select best result per rider (fastest raw time)
+   - Apply race penalties (60s for Stage 1 races, exclude races for Stages 2-6)
+   - Apply time penalties (based on event start time)
+   - Apply handicap adjustments
+5. Stored as JSON in S3 (`results/tdz-2026/stage_X_group_Y.json`)
+6. `processor` Lambda generates static HTML from processed results
+7. Website uploaded to S3, CloudFront cache invalidated
 
 ## Handicap System
 
@@ -88,17 +93,53 @@ kwcc_tdz/
 | B3    | +4 minutes     |
 | B4    | +0 minutes     |
 
-## Penalty System
+## Penalty and Result Selection Rules
 
-- Monday 17:00 UTC (5pm): +1 minute penalty
-- Monday 18:00 UTC (6pm): +1 minute penalty
-- Penalties configured in `src/models/penalty.py`
+### Best Result Selection
+
+When riders have multiple results for a stage:
+
+- **Selection Criteria**: Fastest **raw time** from ZwiftPower
+- **Penalty Application**: Penalties applied to fastest raw time
+- **Final Time**: Used even if penalties make it slower than other attempts
+
+Example: Raw 45:10 (+1 min penalty = 46:10) beats raw 45:30 (no penalty = 45:30)
+
+### Race vs Ride Events
+
+- **Detection**: Regex pattern `\brace\b` (case-insensitive) in event names
+- **Stage 1**: Races allowed with +60 second penalty
+- **Stages 2-6**: Races excluded entirely (only group rides count)
+- Configured per stage in `src/models/tour.py` via `Course.allow_race_events` and `Course.race_event_penalty_seconds`
+
+### Time Penalties
+
+- Configurable per stage via `Course.penalty_events`
+- Applied based on event start timestamp
+- Added to raw time before handicap calculation
+- Example: Monday 17:00 UTC: +1 minute, Monday 18:00 UTC: +1 minute
 
 ## S3 Config Files
 
 - `config/riders.json` - Rider registry with handicap groups
-- `config/event_ids.json` - ZwiftPower event IDs per stage
-- `config/event_timestamps.json` - Event start times for penalty calculation
+- `config/event_ids.json` - ZwiftPower event IDs per stage (optional - system will auto-discover if missing)
+- `config/event_timestamps.json` - Event start times for penalty calculation (populated by discovery)
+
+## Dynamic Event Discovery
+
+When `event_ids.json` is empty or missing for a stage:
+
+1. System searches ZwiftPower API for "Tour de Zwift" events
+2. Filters by stage number and date range from tour configuration
+3. Scores candidates based on:
+   - Matching route name (+5 points)
+   - Contains "Tour de Zwift" (+2 points)
+   - Within stage date range (+3 points)
+   - Excludes "run" events and "advanced" variants
+4. Returns up to 12 highest-scoring events
+5. Fetches event names for race detection
+
+Discovery is fully automated - no manual configuration required for new stages.
 
 ## Pre-commit Hooks
 

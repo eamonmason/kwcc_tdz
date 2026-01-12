@@ -21,14 +21,18 @@ This document describes the AWS architecture for the KWCC Tour de Zwift 2026 res
 │                             AWS (eu-west-1)                                  │
 │                                                                             │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │ EventBridge (Hourly Schedule)                                         │  │
+│  │ EventBridge (Cron: :05 past every hour)                               │  │
 │  └────────────────────────────────┬─────────────────────────────────────┘  │
 │                                   │                                         │
 │                                   ▼                                         │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
 │  │ Lambda: Data Fetcher                                                  │  │
 │  │                                                                        │  │
-│  │ • Fetches results from ZwiftPower                                     │  │
+│  │ • Checks S3 for event IDs, or dynamically discovers from ZwiftPower  │  │
+│  │ • Fetches results from ZwiftPower API                                │  │
+│  │ • Selects best result per rider (fastest raw time)                   │  │
+│  │ • Applies race penalties (Stage 1: +60s, Stages 2-6: exclude races)  │  │
+│  │ • Applies time penalties (configurable per stage)                    │  │
 │  │ • Applies handicap adjustments                                        │  │
 │  │ • Saves processed results to S3                                       │  │
 │  │ • On success, triggers Processor Lambda                               │  │
@@ -103,22 +107,32 @@ This document describes the AWS architecture for the KWCC Tour de Zwift 2026 res
 
 ## Data Flow
 
-1. **Hourly Trigger**: EventBridge triggers Data Fetcher Lambda
-2. **Data Fetch**: Lambda fetches results from ZwiftPower using OAuth
-3. **Processing**: Lambda applies handicaps and penalties
-4. **Storage**: Processed results saved to S3 data bucket
-5. **Website Generation**: Processor Lambda generates HTML
-6. **Upload**: HTML uploaded to S3 website bucket
-7. **Cache Invalidation**: CloudFront cache invalidated
-8. **Serving**: CloudFront serves content to users
+1. **Hourly Trigger**: EventBridge triggers Data Fetcher Lambda at :05 past each hour
+2. **Event Discovery**:
+   - Lambda checks S3 for event IDs (`config/event_ids.json`)
+   - If empty/missing, dynamically discovers events from ZwiftPower API
+   - Searches for "Tour de Zwift" events matching stage number and date range
+   - Scores candidates and selects up to 12 events per stage
+3. **Data Fetch**: Lambda fetches results from ZwiftPower using OAuth
+4. **Result Selection**: Selects best result per rider based on fastest raw time
+5. **Processing**:
+   - Apply race penalties (Stage 1: +60s, Stages 2-6: exclude races)
+   - Apply time penalties (based on event start time)
+   - Apply handicap adjustments (based on rider group)
+6. **Storage**: Processed results saved to S3 data bucket
+7. **Website Generation**: Processor Lambda generates HTML from results
+8. **Upload**: HTML uploaded to S3 website bucket
+9. **Cache Invalidation**: CloudFront cache invalidated
+10. **Serving**: CloudFront serves content to users
 
 ## Configuration Files in S3
 
 ```
 s3://kwcc-tdz-2026-data-prod/
 ├── config/
-│   ├── riders.json           # Rider registry with ZwiftPower IDs
-│   └── event_ids.json        # Stage event ID mappings
+│   ├── riders.json             # Rider registry with ZwiftPower IDs (required)
+│   ├── event_ids.json          # Stage event ID mappings (optional, auto-discovered)
+│   └── event_timestamps.json   # Event start times (populated by discovery)
 └── results/
     └── tdz-2026/
         ├── stage_1_group_A.json
@@ -126,6 +140,8 @@ s3://kwcc-tdz-2026-data-prod/
         ├── stage_2_group_A.json
         └── ...
 ```
+
+**Note**: The `event_ids.json` file is optional. If empty or missing for a stage, the system will automatically discover events from ZwiftPower API. This makes the system fully autonomous for new stages.
 
 ## Monitoring
 
