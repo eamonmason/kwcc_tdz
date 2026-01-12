@@ -4,8 +4,9 @@
 
 repos:
   # Ruff - Fast Python linter and formatter
+  # NOTE: Keep this version in sync with pyproject.toml dev dependencies
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.9.9
     hooks:
       # Run the linter
       - id: ruff

@@ -469,7 +469,7 @@ class TestProcessStageResultsWithMultipleRaces:
             ),
         ]
 
-        group_a, group_b = process_stage_results(
+        _group_a, group_b = process_stage_results(
             race_results,
             registry,
             stage_number=1,
