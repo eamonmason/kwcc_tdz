@@ -1,5 +1,6 @@
 """Tour de Zwift stage configuration."""
 
+import re
 from datetime import UTC, date, datetime, time
 
 from pydantic import BaseModel, Field, computed_field
@@ -30,11 +31,87 @@ class Course(BaseModel):
     penalty_events: list[PenaltyEvent] = Field(
         default_factory=list, description="Penalty events specific to this course"
     )
+    allow_race_events: bool = Field(
+        default=False,
+        description="Whether Race events are allowed (vs Group Rides only). "
+        "If False, race results will be excluded entirely.",
+    )
+    race_event_penalty_seconds: int = Field(
+        default=60,
+        ge=0,
+        description="Penalty in seconds to apply for riding a Race event "
+        "(when allow_race_events=True). Default is 60s (1 minute).",
+    )
+    event_names: dict[str, str] = Field(
+        default_factory=dict,
+        description="Optional mapping of event_id -> event_name for race detection",
+    )
 
     @property
     def has_penalties(self) -> bool:
         """Check if this course has any penalty events."""
         return len(self.penalty_events) > 0
+
+    def is_race_event(self, event_id: str, event_name: str | None = None) -> bool:
+        """
+        Determine if an event is a Race (vs Ride).
+
+        Races have "race" as a standalone word in their name (case insensitive).
+        Group Rides are on the hour and are the intended events.
+
+        Args:
+            event_id: ZwiftPower event ID
+            event_name: Optional event name for detection
+
+        Returns:
+            True if event is a Race, False if it's a Ride
+        """
+        # Use provided event_name or look up from stored names
+        name = event_name or self.event_names.get(event_id, "")
+
+        if not name:
+            return False
+
+        # Use word boundary regex to match "race" as a standalone word
+        # This automatically excludes "trace", "brace", etc.
+        # \b = word boundary, re.IGNORECASE = case insensitive
+        return bool(re.search(r"\brace\b", name, re.IGNORECASE))
+
+    def get_race_penalty(self, event_id: str, event_name: str | None = None) -> int:
+        """
+        Get penalty for a race event.
+
+        Args:
+            event_id: ZwiftPower event ID
+            event_name: Optional event name
+
+        Returns:
+            Penalty in seconds (0 if not a race or races not allowed)
+        """
+        if not self.is_race_event(event_id, event_name):
+            return 0
+
+        if self.allow_race_events:
+            return self.race_event_penalty_seconds
+
+        # Races not allowed - return 0 here, but result should be excluded
+        return 0
+
+    def should_exclude_result(
+        self, event_id: str, event_name: str | None = None
+    ) -> bool:
+        """
+        Determine if a result should be excluded entirely.
+
+        Args:
+            event_id: ZwiftPower event ID
+            event_name: Optional event name
+
+        Returns:
+            True if result should be excluded
+        """
+        # Exclude race events when they're not allowed
+        return self.is_race_event(event_id, event_name) and not self.allow_race_events
 
 
 class Stage(BaseModel):
@@ -153,6 +230,46 @@ class Stage(BaseModel):
             return self.courses[0].penalty_events
         return []
 
+    def get_race_penalty(self, event_id: str, event_name: str | None = None) -> int:
+        """
+        Get race event penalty for a specific event.
+
+        Args:
+            event_id: ZwiftPower event ID
+            event_name: Optional event name
+
+        Returns:
+            Penalty in seconds (0 if not a race or races not allowed)
+        """
+        course = self.get_course_for_event(event_id)
+        if course:
+            return course.get_race_penalty(event_id, event_name)
+        # Fallback to primary course
+        if self.courses:
+            return self.courses[0].get_race_penalty(event_id, event_name)
+        return 0
+
+    def should_exclude_result(
+        self, event_id: str, event_name: str | None = None
+    ) -> bool:
+        """
+        Determine if a result should be excluded entirely.
+
+        Args:
+            event_id: ZwiftPower event ID
+            event_name: Optional event name
+
+        Returns:
+            True if result should be excluded
+        """
+        course = self.get_course_for_event(event_id)
+        if course:
+            return course.should_exclude_result(event_id, event_name)
+        # Fallback to primary course
+        if self.courses:
+            return self.courses[0].should_exclude_result(event_id, event_name)
+        return False
+
 
 # Default penalty events for Monday 5pm and 6pm UTC
 DEFAULT_COURSE_PENALTY_EVENTS: list[PenaltyEvent] = [
@@ -187,6 +304,8 @@ TOUR_STAGES: list[Stage] = [
                 zwiftinsider_url="https://zwiftinsider.com/route/turf-n-surf/",
                 zwiftpower_search_url="https://zwiftpower.com/events.php?search=tour+de+zwift+stage+1",
                 penalty_events=DEFAULT_COURSE_PENALTY_EVENTS,
+                allow_race_events=True,  # Stage 1: Races allowed with 1 min penalty
+                race_event_penalty_seconds=60,  # 1 minute penalty for Race events
             ),
         ],
         start_datetime=datetime(2026, 1, 5, 17, 0, tzinfo=UTC),  # 5pm UTC

@@ -303,7 +303,10 @@ def find_tdz_race_events_with_timestamps(
     end_date: date,
 ) -> list[tuple[str, datetime | None]]:
     """
-    Find Tour de Zwift race event IDs for a specific stage with timestamps.
+    Find Tour de Zwift event IDs for a specific stage with timestamps.
+
+    Fetches ALL event types (both races and rides). Race filtering is handled
+    later by the processor based on stage configuration.
 
     Args:
         client: ZwiftPower client
@@ -359,12 +362,10 @@ def find_tdz_race_events_with_timestamps(
         # Score based on various criteria
         if "tour de zwift" in event_name:
             score += 2
-        if route_name.lower() in event_name:
+        if route_name and route_name.lower() in event_name:
             score += 5
-        # Exclude "Race" events - we want regular stage events, not race events
-        # e.g., "Stage 1 - Tour de Zwift" is valid, "Stage 1 - Race - Tour de Zwift" is not
-        if " race " in event_name or "- race -" in event_name:
-            score -= 20
+        # Include ALL event types (races and rides)
+        # Race filtering happens later in the processor based on stage config
         # Penalize "Advanced" events (different route/distance)
         if "advanced" in event_name:
             score -= 2
@@ -403,17 +404,16 @@ def find_tdz_race_events_with_timestamps(
         # Include any Stage X TdZ events as fallback
         for event in events:
             event_name = event.get("name", "").lower()
-            # Exclude run events and race events
-            if stage_pattern in event_name and "run" not in event_name:
-                if " race " in event_name or "- race -" in event_name:
-                    continue
-                if event["id"] not in seen_ids:
-                    event_ts = event.get("timestamp", 0)
-                    event_datetime = (
-                        datetime.fromtimestamp(event_ts) if event_ts else None
-                    )
-                    events_with_timestamps.append((event["id"], event_datetime))
-                    seen_ids.add(event["id"])
+            # Include ALL event types (races and rides), exclude only run events
+            if (
+                stage_pattern in event_name
+                and "run" not in event_name
+                and event["id"] not in seen_ids
+            ):
+                event_ts = event.get("timestamp", 0)
+                event_datetime = datetime.fromtimestamp(event_ts) if event_ts else None
+                events_with_timestamps.append((event["id"], event_datetime))
+                seen_ids.add(event["id"])
 
     if not events_with_timestamps:
         raise ZwiftPowerEventNotFoundError(

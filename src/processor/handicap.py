@@ -16,6 +16,7 @@ def apply_handicap_and_penalty(
     rider: Rider,
     penalty_config: PenaltyConfig | None = None,
     penalty_events: list[PenaltyEvent] | None = None,
+    race_penalty_seconds: int = 0,
 ) -> StageResult:
     """
     Apply handicap and penalty adjustments to a race result.
@@ -25,6 +26,7 @@ def apply_handicap_and_penalty(
         rider: Rider with handicap information
         penalty_config: Optional penalty configuration (legacy, used if penalty_events not provided)
         penalty_events: Optional list of penalty events for per-course penalties (preferred)
+        race_penalty_seconds: Penalty for race events (vs rides)
 
     Returns:
         StageResult with handicap and penalty applied
@@ -51,6 +53,14 @@ def apply_handicap_and_penalty(
             event_hour = race_result.timestamp.hour
             day_name = race_result.timestamp.strftime("%A")
             penalty_reason = f"{day_name} {event_hour}:00 UTC event"
+
+    # Add race event penalty if applicable
+    if race_penalty_seconds > 0:
+        penalty_seconds += race_penalty_seconds
+        if penalty_reason:
+            penalty_reason += " + Race event"
+        else:
+            penalty_reason = "Race event"
 
     return StageResult(
         rider_name=rider.name,
@@ -121,16 +131,31 @@ def process_stage_results(
         if not rider:
             continue
 
+        # Check if result should be excluded (e.g., race events for stages 2-6)
+        if (
+            stage
+            and race_result.event_id
+            and stage.should_exclude_result(
+                race_result.event_id, race_result.event_name
+            )
+        ):
+            continue
+
         # Get per-course penalty events if stage is provided
         penalty_events = None
+        race_penalty = 0
         if stage and race_result.event_id:
             penalty_events = stage.get_penalty_events_for_event(race_result.event_id)
+            race_penalty = stage.get_race_penalty(
+                race_result.event_id, race_result.event_name
+            )
 
         stage_result = apply_handicap_and_penalty(
             race_result,
             rider,
             penalty_config=penalty_config if not penalty_events else None,
             penalty_events=penalty_events,
+            race_penalty_seconds=race_penalty,
         )
         stage_result.is_provisional = is_provisional
 
@@ -186,6 +211,16 @@ def get_best_result_per_rider(
     """
     For riders with multiple results in a stage, keep only their best result.
 
+    IMPORTANT: Best result is determined by FASTEST RAW TIME (from ZwiftPower),
+    not adjusted time. If the fastest raw time is from a penalty stage, the
+    penalty is applied to that time, even if it results in a slower adjusted
+    time than another attempt.
+
+    Example:
+    - Penalty stage: raw=45:10, +1min penalty → adjusted=46:10
+    - Non-penalty stage: raw=45:30, no penalty → adjusted=45:30
+    - Result: 46:10 is used (fastest raw time with penalty applied)
+
     This handles cases where a rider might have done multiple races
     during the stage week.
 
@@ -193,7 +228,7 @@ def get_best_result_per_rider(
         results: All stage results
 
     Returns:
-        List with only the best result per rider
+        List with only the best result per rider (based on fastest raw time)
     """
     best_results: dict[str, StageResult] = {}
 
@@ -201,8 +236,7 @@ def get_best_result_per_rider(
         rider_id = result.rider_id
         if (
             rider_id not in best_results
-            or result.adjusted_time_seconds
-            < best_results[rider_id].adjusted_time_seconds
+            or result.raw_time_seconds < best_results[rider_id].raw_time_seconds
         ):
             best_results[rider_id] = result
 

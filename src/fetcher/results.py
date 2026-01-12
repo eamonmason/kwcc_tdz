@@ -17,6 +17,7 @@ def fetch_event_results(
     stage_number: int,
     rider_registry: RiderRegistry | None = None,
     event_timestamp: datetime | None = None,
+    event_name: str | None = None,
 ) -> list[RaceResult]:
     """
     Fetch race results for a ZwiftPower event.
@@ -27,6 +28,7 @@ def fetch_event_results(
         stage_number: Stage number for the result
         rider_registry: Optional rider registry to filter results
         event_timestamp: Optional event start timestamp (for penalty calculation)
+        event_name: Optional event name (for race detection)
 
     Returns:
         List of race results
@@ -35,7 +37,9 @@ def fetch_event_results(
 
     # Try JSON API first (more reliable if available)
     try:
-        results = _fetch_results_json(client, event_id, stage_number, event_timestamp)
+        results = _fetch_results_json(
+            client, event_id, stage_number, event_timestamp, event_name
+        )
         if results:
             if rider_registry:
                 results = _filter_to_kwcc(results, rider_registry)
@@ -44,7 +48,9 @@ def fetch_event_results(
         logger.debug(f"JSON API failed: {e}, falling back to HTML")
 
     # Fall back to HTML scraping
-    results = _fetch_results_html(client, event_id, stage_number, event_timestamp)
+    results = _fetch_results_html(
+        client, event_id, stage_number, event_timestamp, event_name
+    )
 
     if rider_registry:
         results = _filter_to_kwcc(results, rider_registry)
@@ -57,6 +63,7 @@ def _fetch_results_json(
     event_id: str,
     stage_number: int,
     event_timestamp: datetime | None = None,
+    event_name: str | None = None,
 ) -> list[RaceResult]:
     """Fetch results via ZwiftPower JSON API.
 
@@ -118,6 +125,7 @@ def _fetch_results_json(
                     rider_name=rider_name,
                     stage_number=stage_number,
                     event_id=event_id,
+                    event_name=event_name or "",
                     raw_time_seconds=raw_time,
                     finish_position=position,
                     timestamp=timestamp,
@@ -144,6 +152,7 @@ def _fetch_results_html(
     event_id: str,
     stage_number: int,
     event_timestamp: datetime | None = None,
+    event_name: str | None = None,
 ) -> list[RaceResult]:
     """Fetch results via HTML scraping."""
     soup = client.get_html("/events.php", params={"zid": event_id})
@@ -213,6 +222,7 @@ def _fetch_results_html(
                 rider_name=rider_name,
                 stage_number=stage_number,
                 event_id=event_id,
+                event_name=event_name or "",
                 raw_time_seconds=raw_time,
                 finish_position=position or len(results) + 1,
                 timestamp=event_timestamp if event_timestamp else datetime.now(),
@@ -252,6 +262,7 @@ def fetch_stage_results(
     stage_number: int,
     rider_registry: RiderRegistry,
     event_timestamps: dict[str, datetime] | None = None,
+    event_names: dict[str, str] | None = None,
 ) -> list[RaceResult]:
     """
     Fetch results from multiple events for a stage.
@@ -262,6 +273,7 @@ def fetch_stage_results(
         stage_number: Stage number
         rider_registry: Rider registry for filtering
         event_timestamps: Optional dict mapping event_id to event start datetime
+        event_names: Optional dict mapping event_id to event name (for race detection)
 
     Returns:
         Combined list of all race results (may include multiple per rider).
@@ -273,11 +285,19 @@ def fetch_stage_results(
         try:
             # Get event timestamp for penalty calculation
             event_timestamp = None
+            event_name = None
             if event_timestamps:
                 event_timestamp = event_timestamps.get(event_id)
+            if event_names:
+                event_name = event_names.get(event_id)
 
             results = fetch_event_results(
-                client, event_id, stage_number, rider_registry, event_timestamp
+                client,
+                event_id,
+                stage_number,
+                rider_registry,
+                event_timestamp,
+                event_name,
             )
 
             # Keep all results - best selection happens after penalties are applied

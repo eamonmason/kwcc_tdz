@@ -168,9 +168,76 @@ def handler(event, context):  # noqa: ARG001
 
         # Get event IDs for current stage
         stage_event_ids = event_ids.get(current_stage.number, [])
+
+        # Build event_names dict from course configuration
+        event_names = {}
+        for course in current_stage.courses:
+            event_names.update(course.event_names)
+
+        # If no event IDs configured, try dynamic discovery
         if not stage_event_ids:
-            logger.warning(f"No event IDs configured for Stage {current_stage.number}")
-            return {"statusCode": 200, "body": "No event IDs configured"}
+            logger.info(
+                f"No event IDs configured for Stage {current_stage.number}, "
+                "attempting dynamic discovery"
+            )
+            try:
+                from src.fetcher.events import find_tdz_race_events_with_timestamps
+
+                with ZwiftPowerClient(username, password) as client:
+                    # Attempt authentication for API access
+                    try:
+                        client.authenticate()
+                    except Exception as e:
+                        logger.warning(f"Authentication failed: {e}")
+
+                    # Discover events for this stage
+                    from src.fetcher.events import search_events_api
+
+                    # Search for events to get names and metadata
+                    discovered_events = search_events_api(
+                        client, "Tour de Zwift", days=14
+                    )
+
+                    # Filter to events matching this stage
+                    # Get route from primary course
+                    stage_route = (
+                        current_stage.courses[0].route if current_stage.courses else ""
+                    )
+                    events_with_ts = find_tdz_race_events_with_timestamps(
+                        client,
+                        current_stage.number,
+                        stage_route,
+                        current_stage.start_datetime.date(),
+                        current_stage.end_datetime.date(),
+                    )
+
+                    if events_with_ts:
+                        stage_event_ids = [event_id for event_id, _ in events_with_ts]
+                        # Update event_timestamps and event_names with discovered data
+                        for event_id, event_dt in events_with_ts:
+                            if event_dt and event_id not in event_timestamps:
+                                event_timestamps[event_id] = event_dt
+                            # Find event name from discovered events
+                            for discovered_event in discovered_events:
+                                if discovered_event.get("id") == event_id:
+                                    event_names[event_id] = discovered_event.get(
+                                        "name", ""
+                                    )
+                                    break
+
+                        logger.info(
+                            f"Dynamically discovered {len(stage_event_ids)} events "
+                            f"for Stage {current_stage.number}"
+                        )
+            except Exception as e:
+                logger.error(f"Dynamic discovery failed: {e}")
+
+        if not stage_event_ids:
+            logger.warning(
+                f"No event IDs found for Stage {current_stage.number} "
+                "(neither configured nor discovered)"
+            )
+            return {"statusCode": 200, "body": "No event IDs found"}
 
         # Fetch results from ZwiftPower
         with ZwiftPowerClient(username, password) as client:
@@ -187,6 +254,7 @@ def handler(event, context):  # noqa: ARG001
                 current_stage.number,
                 rider_registry,
                 event_timestamps,
+                event_names,
             )
 
         logger.info(f"Fetched {len(race_results)} results")

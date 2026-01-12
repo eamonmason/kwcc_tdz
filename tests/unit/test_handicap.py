@@ -389,30 +389,41 @@ class TestGetBestResultPerRider:
         assert len(best) == 1
         assert best[0].raw_time_seconds == 2400  # Best result
 
-    def test_considers_adjusted_time(self):
-        """Test best result is based on adjusted time, not raw time."""
+    def test_selects_fastest_raw_time(self):
+        """
+        Test best result is based on FASTEST RAW TIME, not adjusted time.
+
+        NEW BEHAVIOR: If the fastest raw time is from a penalty stage,
+        the penalty is applied to that time, even if it results in a
+        slower adjusted time than another attempt.
+
+        Example:
+        - Penalty stage: raw=45:10 (2710s), +1min penalty → adjusted=46:10 (2770s)
+        - Non-penalty stage: raw=45:30 (2730s), no penalty → adjusted=45:30 (2730s)
+        - Result: 46:10 is used (fastest raw time with penalty applied)
+        """
         results = [
-            # Faster raw time but with penalty = worse adjusted
+            # Faster raw time but with penalty (THIS SHOULD BE SELECTED)
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
                 stage_number=1,
                 race_group="A",
                 handicap_group="A1",
-                raw_time_seconds=2300,  # 2300 + 600 + 300 = 3200
+                raw_time_seconds=2710,  # 45:10 raw + 600 handicap + 60 penalty = 3370
                 handicap_seconds=600,
-                penalty_seconds=300,
+                penalty_seconds=60,
                 position=1,
                 raw_position=1,
             ),
-            # Slower raw time but no penalty = better adjusted
+            # Slower raw time but no penalty (better adjusted, but NOT selected)
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
                 stage_number=1,
                 race_group="A",
                 handicap_group="A1",
-                raw_time_seconds=2400,  # 2400 + 600 + 0 = 3000
+                raw_time_seconds=2730,  # 45:30 raw + 600 handicap + 0 penalty = 3330
                 handicap_seconds=600,
                 penalty_seconds=0,
                 position=1,
@@ -423,7 +434,13 @@ class TestGetBestResultPerRider:
         best = get_best_result_per_rider(results)
 
         assert len(best) == 1
-        assert best[0].raw_time_seconds == 2400  # Better adjusted time
+        # Should select the result with fastest RAW time (2710), even though
+        # its adjusted time (3370) is slower than the other result (3330)
+        assert best[0].raw_time_seconds == 2710  # Fastest raw time
+        assert best[0].penalty_seconds == 60  # Has penalty
+        assert (
+            best[0].adjusted_time_seconds == 3370
+        )  # Slower adjusted time, but that's OK
 
     def test_empty_list(self):
         """Test empty list returns empty list."""
@@ -433,21 +450,22 @@ class TestGetBestResultPerRider:
 class TestProcessStageResultsWithMultipleRaces:
     """Tests for process_stage_results with multiple races per rider."""
 
-    def test_penalty_affects_best_result_selection(self):
+    def test_penalty_uses_fastest_raw_time(self):
         """
-        Test that penalties are considered when selecting best result.
+        Test that FASTEST RAW TIME is selected, even with penalty.
 
-        Scenario (like Judah Rand):
+        NEW BEHAVIOR - Scenario:
         - Monday 5pm race: 33:35 raw + 1 min penalty = 34:35 adjusted
         - Monday 7pm race: 34:08 raw + 0 penalty = 34:08 adjusted
-        The 7pm race should be selected as best despite slower raw time.
+        The 5pm race should be selected as best (fastest raw time),
+        even though the penalty makes the adjusted time slower.
         """
         rider = Rider(name="Judah Rand", zwiftpower_id="123", handicap_group="B4")
         registry = RiderRegistry(riders=[rider])
 
         # Two races from the same rider in different events
         race_results = [
-            # Monday 5pm race - faster raw but with penalty
+            # Monday 5pm race - faster raw but with penalty (SHOULD BE SELECTED)
             RaceResult(
                 rider_id="123",
                 rider_name="Judah Rand",
@@ -480,12 +498,16 @@ class TestProcessStageResultsWithMultipleRaces:
         assert len(group_b) == 1
         result = group_b[0]
 
-        # Should have selected the 7pm race (34:08) as best because
-        # 5pm race adjusted = 33:35 + 1min penalty = 34:35
-        # 7pm race adjusted = 34:08 + 0 penalty = 34:08
-        assert result.raw_time_seconds == 2048  # 34:08 from 7pm race
-        assert result.penalty_seconds == 0  # No penalty for 7pm
-        assert result.adjusted_time_seconds == 2048  # B4 has 0 handicap
+        # NEW BEHAVIOR: Should have selected the 5pm race (33:35) as best
+        # because it has the fastest RAW time, even though penalty makes
+        # the adjusted time slower:
+        # 5pm race: 33:35 raw + 1min penalty = 34:35 adjusted (SELECTED)
+        # 7pm race: 34:08 raw + 0 penalty = 34:08 adjusted
+        assert result.raw_time_seconds == 2015  # 33:35 from 5pm race (fastest raw)
+        assert result.penalty_seconds == 60  # Has penalty from 5pm
+        assert (
+            result.adjusted_time_seconds == 2075
+        )  # 33:35 + 1min penalty (B4 has 0 handicap)
 
     def test_multiple_riders_with_multiple_races(self):
         """Test multiple riders each with multiple race results."""
@@ -496,23 +518,23 @@ class TestProcessStageResultsWithMultipleRaces:
         registry = RiderRegistry(riders=riders)
 
         race_results = [
-            # Rider A - 5pm race (with penalty)
+            # Rider A - 5pm race (with penalty) - FASTEST RAW TIME, should be selected
             RaceResult(
                 rider_id="1",
                 rider_name="Rider A",
                 stage_number=1,
                 event_id="event1",
-                raw_time_seconds=2000,  # + 60s penalty = 2060 adjusted (+ handicap)
+                raw_time_seconds=2000,  # Fastest raw + 60s penalty = 2060
                 finish_position=1,
                 timestamp=datetime(2026, 1, 5, 17, 0, 0),
             ),
-            # Rider A - 7pm race (no penalty) - should be selected
+            # Rider A - 7pm race (no penalty) - slower raw time
             RaceResult(
                 rider_id="1",
                 rider_name="Rider A",
                 stage_number=1,
                 event_id="event2",
-                raw_time_seconds=2050,  # No penalty = 2050 adjusted (+ handicap)
+                raw_time_seconds=2050,  # Slower raw, no penalty = 2050
                 finish_position=2,
                 timestamp=datetime(2026, 1, 5, 19, 0, 0),
             ),
@@ -538,10 +560,12 @@ class TestProcessStageResultsWithMultipleRaces:
         assert len(group_a) == 2
         assert len(group_b) == 0
 
-        # Find Rider A's result
+        # Find Rider A's result - should have fastest RAW time (5pm race)
         rider_a_result = next(r for r in group_a if r.rider_id == "1")
-        assert rider_a_result.raw_time_seconds == 2050  # 7pm race selected
-        assert rider_a_result.penalty_seconds == 0
+        assert (
+            rider_a_result.raw_time_seconds == 2000
+        )  # 5pm race selected (fastest raw)
+        assert rider_a_result.penalty_seconds == 60  # Has penalty
 
         # Find Rider B's result
         rider_b_result = next(r for r in group_a if r.rider_id == "2")
@@ -640,3 +664,302 @@ class TestGuestRiderHandling:
         assert guest_result.guest is True
         club_result = next(r for r in group_a if r.rider_id == "1")
         assert club_result.guest is False
+
+
+class TestRaceEventPenalty:
+    """Tests for race event penalty handling."""
+
+    def test_race_penalty_applied(self):
+        """Test race event penalty is applied when configured."""
+        from src.models.tour import Course, Stage
+
+        rider = Rider(name="Test Rider", zwiftpower_id="1", handicap_group="A1")
+        registry = RiderRegistry(riders=[rider])
+
+        # Create a stage with race events allowed and 60s penalty
+        stage = Stage(
+            number=1,
+            name="Test Stage",
+            courses=[
+                Course(
+                    route="Test Route",
+                    distance_km=20.0,
+                    elevation_m=100,
+                    event_ids=["race123"],
+                    allow_race_events=True,
+                    race_event_penalty_seconds=60,
+                    event_names={"race123": "Tour de Zwift Stage 1 - Race"},
+                )
+            ],
+            start_datetime=datetime(2026, 1, 5, 17, 0),
+            end_datetime=datetime(2026, 1, 12, 16, 59),
+        )
+
+        race_results = [
+            RaceResult(
+                rider_id="1",
+                rider_name="Test Rider",
+                stage_number=1,
+                event_id="race123",
+                event_name="Tour de Zwift Stage 1 - Race",
+                raw_time_seconds=2400,
+                finish_position=1,
+                timestamp=datetime(2026, 1, 6, 18, 0, 0),
+            ),
+        ]
+
+        group_a, _, _ = process_stage_results(
+            race_results,
+            registry,
+            stage_number=1,
+            stage=stage,
+        )
+
+        assert len(group_a) == 1
+        assert group_a[0].penalty_seconds == 60
+        assert "Race event" in group_a[0].penalty_reason
+
+    def test_race_penalty_combined_with_time_penalty(self):
+        """Test race penalty is combined with time-based penalty."""
+        from src.models.penalty import PenaltyEvent
+        from src.models.tour import Course, Stage
+
+        rider = Rider(name="Test Rider", zwiftpower_id="1", handicap_group="A1")
+        registry = RiderRegistry(riders=[rider])
+
+        # Create a stage with both race penalty and time penalty
+        stage = Stage(
+            number=1,
+            name="Test Stage",
+            courses=[
+                Course(
+                    route="Test Route",
+                    distance_km=20.0,
+                    elevation_m=100,
+                    event_ids=["race123"],
+                    penalty_events=[
+                        PenaltyEvent(
+                            event_time_utc=datetime(2026, 1, 5, 17, 0).time(),
+                            day_of_week=0,  # Monday
+                            penalty_seconds=60,
+                            description="Monday 5pm",
+                        )
+                    ],
+                    allow_race_events=True,
+                    race_event_penalty_seconds=60,
+                    event_names={"race123": "Tour de Zwift Stage 1 - Race"},
+                )
+            ],
+            start_datetime=datetime(2026, 1, 5, 17, 0),
+            end_datetime=datetime(2026, 1, 12, 16, 59),
+        )
+
+        race_results = [
+            RaceResult(
+                rider_id="1",
+                rider_name="Test Rider",
+                stage_number=1,
+                event_id="race123",
+                event_name="Tour de Zwift Stage 1 - Race",
+                raw_time_seconds=2400,
+                finish_position=1,
+                timestamp=datetime(2026, 1, 5, 17, 0, 0),  # Monday 5pm
+            ),
+        ]
+
+        group_a, _, _ = process_stage_results(
+            race_results,
+            registry,
+            stage_number=1,
+            stage=stage,
+        )
+
+        assert len(group_a) == 1
+        # Should have both penalties: 60s time penalty + 60s race penalty = 120s
+        assert group_a[0].penalty_seconds == 120
+        assert "Monday" in group_a[0].penalty_reason
+        assert "Race event" in group_a[0].penalty_reason
+
+    def test_no_race_penalty_for_ride_events(self):
+        """Test no race penalty is applied for ride (non-race) events."""
+        from src.models.tour import Course, Stage
+
+        rider = Rider(name="Test Rider", zwiftpower_id="1", handicap_group="A1")
+        registry = RiderRegistry(riders=[rider])
+
+        stage = Stage(
+            number=1,
+            name="Test Stage",
+            courses=[
+                Course(
+                    route="Test Route",
+                    distance_km=20.0,
+                    elevation_m=100,
+                    event_ids=["ride123"],
+                    allow_race_events=True,
+                    race_event_penalty_seconds=60,
+                    event_names={"ride123": "Tour de Zwift Stage 1 - Group Ride"},
+                )
+            ],
+            start_datetime=datetime(2026, 1, 5, 17, 0),
+            end_datetime=datetime(2026, 1, 12, 16, 59),
+        )
+
+        race_results = [
+            RaceResult(
+                rider_id="1",
+                rider_name="Test Rider",
+                stage_number=1,
+                event_id="ride123",
+                event_name="Tour de Zwift Stage 1 - Group Ride",
+                raw_time_seconds=2400,
+                finish_position=1,
+                timestamp=datetime(2026, 1, 6, 18, 0, 0),
+            ),
+        ]
+
+        group_a, _, _ = process_stage_results(
+            race_results,
+            registry,
+            stage_number=1,
+            stage=stage,
+        )
+
+        assert len(group_a) == 1
+        # No race penalty for ride events
+        assert group_a[0].penalty_seconds == 0
+
+
+class TestRaceEventExclusion:
+    """Tests for race event exclusion (Stages 2-6)."""
+
+    def test_race_events_excluded_when_not_allowed(self):
+        """Test race events are excluded when allow_race_events=False."""
+        from src.models.tour import Course, Stage
+
+        rider = Rider(name="Test Rider", zwiftpower_id="1", handicap_group="A1")
+        registry = RiderRegistry(riders=[rider])
+
+        # Stage 2+ configuration: races not allowed
+        stage = Stage(
+            number=2,
+            name="Test Stage",
+            courses=[
+                Course(
+                    route="Test Route",
+                    distance_km=20.0,
+                    elevation_m=100,
+                    event_ids=["race123", "ride456"],
+                    allow_race_events=False,  # Races not allowed
+                    event_names={
+                        "race123": "Tour de Zwift Stage 2 - Race",
+                        "ride456": "Tour de Zwift Stage 2 - Group Ride",
+                    },
+                )
+            ],
+            start_datetime=datetime(2026, 1, 12, 17, 0),
+            end_datetime=datetime(2026, 1, 19, 16, 59),
+        )
+
+        race_results = [
+            # Race event - should be excluded
+            RaceResult(
+                rider_id="1",
+                rider_name="Test Rider",
+                stage_number=2,
+                event_id="race123",
+                event_name="Tour de Zwift Stage 2 - Race",
+                raw_time_seconds=2300,  # Faster time
+                finish_position=1,
+                timestamp=datetime(2026, 1, 13, 18, 0, 0),
+            ),
+            # Ride event - should be included
+            RaceResult(
+                rider_id="1",
+                rider_name="Test Rider",
+                stage_number=2,
+                event_id="ride456",
+                event_name="Tour de Zwift Stage 2 - Group Ride",
+                raw_time_seconds=2400,  # Slower time
+                finish_position=1,
+                timestamp=datetime(2026, 1, 13, 19, 0, 0),
+            ),
+        ]
+
+        group_a, _, _ = process_stage_results(
+            race_results,
+            registry,
+            stage_number=2,
+            stage=stage,
+        )
+
+        # Only the ride event should be in results
+        assert len(group_a) == 1
+        assert group_a[0].event_id == "ride456"
+        assert group_a[0].raw_time_seconds == 2400
+
+    def test_multiple_riders_some_race_some_ride(self):
+        """Test some riders do race (excluded) while others do ride (included)."""
+        from src.models.tour import Course, Stage
+
+        riders = [
+            Rider(name="Rider A", zwiftpower_id="1", handicap_group="A1"),
+            Rider(name="Rider B", zwiftpower_id="2", handicap_group="A2"),
+        ]
+        registry = RiderRegistry(riders=riders)
+
+        stage = Stage(
+            number=2,
+            name="Test Stage",
+            courses=[
+                Course(
+                    route="Test Route",
+                    distance_km=20.0,
+                    elevation_m=100,
+                    event_ids=["race123", "ride456"],
+                    allow_race_events=False,
+                    event_names={
+                        "race123": "Stage 2 - Race",
+                        "ride456": "Stage 2 - Group Ride",
+                    },
+                )
+            ],
+            start_datetime=datetime(2026, 1, 12, 17, 0),
+            end_datetime=datetime(2026, 1, 19, 16, 59),
+        )
+
+        race_results = [
+            # Rider A did race - excluded
+            RaceResult(
+                rider_id="1",
+                rider_name="Rider A",
+                stage_number=2,
+                event_id="race123",
+                event_name="Stage 2 - Race",
+                raw_time_seconds=2300,
+                finish_position=1,
+                timestamp=datetime(2026, 1, 13, 18, 0, 0),
+            ),
+            # Rider B did ride - included
+            RaceResult(
+                rider_id="2",
+                rider_name="Rider B",
+                stage_number=2,
+                event_id="ride456",
+                event_name="Stage 2 - Group Ride",
+                raw_time_seconds=2400,
+                finish_position=1,
+                timestamp=datetime(2026, 1, 13, 19, 0, 0),
+            ),
+        ]
+
+        group_a, _, _ = process_stage_results(
+            race_results,
+            registry,
+            stage_number=2,
+            stage=stage,
+        )
+
+        # Only Rider B should have results
+        assert len(group_a) == 1
+        assert group_a[0].rider_id == "2"

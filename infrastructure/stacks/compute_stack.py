@@ -145,13 +145,14 @@ class ComputeStack(Stack):
         # Grant data fetcher permission to invoke processor Lambda
         self.results_processor.grant_invoke(self.data_fetcher)
 
-        # EventBridge rule for hourly execution
+        # EventBridge rule for hourly execution (cron-based for precise timing)
+        # Runs at 5 minutes past every hour to allow events to complete
         hourly_rule = events.Rule(
             self,
             "HourlyFetchRule",
             rule_name=f"kwcc-tdz-hourly-fetch-{environment}",
-            schedule=events.Schedule.rate(Duration.hours(1)),
-            description="Fetch ZwiftPower results hourly",
+            schedule=events.Schedule.cron(minute="5", hour="*"),
+            description="Fetch ZwiftPower results hourly at :05 past the hour",
         )
 
         hourly_rule.add_target(

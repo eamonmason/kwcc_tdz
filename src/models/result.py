@@ -12,6 +12,7 @@ class RaceResult(BaseModel):
     rider_name: str = Field(..., description="Rider name from ZwiftPower")
     stage_number: int = Field(..., ge=1, le=6, description="Stage number (1-6)")
     event_id: str = Field(..., description="ZwiftPower event ID")
+    event_name: str = Field(default="", description="Event name from ZwiftPower")
     raw_time_seconds: int = Field(..., ge=0, description="Finish time in seconds")
     finish_position: int = Field(..., ge=1, description="Position in race")
     timestamp: datetime = Field(..., description="Race completion timestamp")
