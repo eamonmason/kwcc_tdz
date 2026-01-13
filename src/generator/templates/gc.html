@@ -237,11 +237,7 @@
             <h3>Women's GC</h3>
             {% set stage_gc_women = gc_by_stage_women[stage_num] %}
             {% if stage_gc_women.standings %}
-            <div class="guest-filter">
-                <input type="checkbox" id="show-guests-women-{{ stage_num }}" checked>
-                <label for="show-guests-women-{{ stage_num }}">Show guest riders</label>
-            </div>
-            <table class="results-table gc-table" id="women-gc-table-{{ stage_num }}">
+            <table class="results-table gc-table women-gc-table" id="women-gc-table-{{ stage_num }}">
                 <thead>
                     <tr>
                         <th>Pos</th>
@@ -379,15 +375,81 @@
     const showGuests = savedState === null ? true : savedState === 'true';
     checkbox.checked = showGuests;
 
-    // Apply initial state to all guest rows
-    function applyGuestFilter(show) {
-        const guestRows = document.querySelectorAll('tr[data-guest="true"]');
-        guestRows.forEach(row => {
-            if (show) {
-                row.classList.remove('hidden');
-            } else {
+    // Format time in seconds to display format
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        if (hours > 0) {
+            return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Format gap to leader
+    function formatGap(gapSeconds) {
+        if (gapSeconds === 0) return '-';
+        return '+' + formatTime(gapSeconds);
+    }
+
+    // Get medal HTML for position
+    function getMedalHtml(position) {
+        if (position === 1) return '<span class="medal gold">&#129351;</span>';
+        if (position === 2) return '<span class="medal silver">&#129352;</span>';
+        if (position === 3) return '<span class="medal bronze">&#129353;</span>';
+        return position.toString();
+    }
+
+    // Recalculate positions within a table excluding hidden guest rows
+    function recalculatePositions(table, showGuests) {
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        let position = 1;
+        let leaderTime = null;
+
+        rows.forEach(row => {
+            const isGuest = row.dataset.guest === 'true';
+            const isDns = row.classList.contains('dns-row');
+            const posCell = row.querySelector('.position');
+
+            if (!showGuests && isGuest) {
+                // Hide guest row
                 row.classList.add('hidden');
+                return;
+            } else {
+                row.classList.remove('hidden');
             }
+
+            // Skip DNS rows for position calculation
+            if (isDns) return;
+
+            // Get total time from the cell (parse from display)
+            const timeCell = row.querySelector('.total-time');
+            if (!timeCell) return;
+
+            // Update position
+            if (posCell) {
+                posCell.innerHTML = getMedalHtml(position);
+                // Update top-three class
+                if (position <= 3) {
+                    row.classList.add('top-three');
+                } else {
+                    row.classList.remove('top-three');
+                }
+            }
+
+            position++;
+        });
+    }
+
+    // Apply guest filter and recalculate positions
+    function applyGuestFilter(show) {
+        // Get all GC tables except Women's GC (which shouldn't be filtered)
+        const tables = document.querySelectorAll('.gc-table:not(.women-gc-table)');
+        tables.forEach(table => {
+            recalculatePositions(table, show);
         });
     }
 

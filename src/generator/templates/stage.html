@@ -561,15 +561,55 @@ document.querySelectorAll('.sortable-table').forEach(table => {
     const showGuests = savedState === null ? true : savedState === 'true';
     checkbox.checked = showGuests;
 
-    // Apply initial state to all guest rows
-    function applyGuestFilter(show) {
-        const guestRows = document.querySelectorAll('tr[data-guest="true"]');
-        guestRows.forEach(row => {
-            if (show) {
-                row.classList.remove('hidden');
-            } else {
+    // Get medal HTML for position
+    function getMedalHtml(position) {
+        if (position === 1) return '<span class="medal gold">&#129351;</span>';
+        if (position === 2) return '<span class="medal silver">&#129352;</span>';
+        if (position === 3) return '<span class="medal bronze">&#129353;</span>';
+        return position.toString();
+    }
+
+    // Recalculate positions within a table excluding hidden guest rows
+    function recalculatePositions(table, showGuests) {
+        const tbody = table.querySelector('tbody');
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        let position = 1;
+
+        rows.forEach(row => {
+            const isGuest = row.dataset.guest === 'true';
+            const posCell = row.querySelector('.position');
+
+            if (!showGuests && isGuest) {
+                // Hide guest row
                 row.classList.add('hidden');
+                return;
+            } else {
+                row.classList.remove('hidden');
             }
+
+            // Update position
+            if (posCell) {
+                posCell.innerHTML = getMedalHtml(position);
+                // Update top-three class
+                if (position <= 3) {
+                    row.classList.add('top-three');
+                } else {
+                    row.classList.remove('top-three');
+                }
+            }
+
+            position++;
+        });
+    }
+
+    // Apply guest filter and recalculate positions
+    function applyGuestFilter(show) {
+        // Get all results tables (Group A, Group B, Women's)
+        const tables = document.querySelectorAll('.results-table');
+        tables.forEach(table => {
+            recalculatePositions(table, show);
         });
     }
 
