@@ -113,6 +113,7 @@ class WebsiteGenerator:
         self,
         tour_standings: TourStandings,
         tour_config: TourConfig,
+        women_gc=None,
     ) -> Path:
         """
         Generate index.html (homepage).
@@ -120,6 +121,7 @@ class WebsiteGenerator:
         Args:
             tour_standings: Current tour standings
             tour_config: Tour configuration
+            women_gc: Women's GC standings (optional)
 
         Returns:
             Path to generated file
@@ -131,6 +133,7 @@ class WebsiteGenerator:
         context = {
             "group_a": tour_standings.group_a,
             "group_b": tour_standings.group_b,
+            "women_gc": women_gc,
             "stages": tour_config.stages,
             "current_stage": tour_standings.current_stage,
             "is_provisional": tour_standings.is_provisional,
@@ -343,8 +346,30 @@ class WebsiteGenerator:
         # Copy static assets
         self.copy_static_assets()
 
+        # Calculate women's GC for index page
+        from src.processor.gc_standings import calculate_women_gc_standings
+
+        # Build stage results dict for GC calculation
+        group_a_results: dict[int, list[StageResult]] = {}
+        group_b_results: dict[int, list[StageResult]] = {}
+
+        for stage_num, (group_a, group_b, _) in stage_results.items():
+            group_a_results[stage_num] = group_a
+            group_b_results[stage_num] = group_b
+
+        women_gc = calculate_women_gc_standings(
+            group_a_results,
+            group_b_results,
+            tour_standings.group_a.completed_stages,
+            tour_standings.is_provisional,
+            include_guests=True,
+        )
+        women_gc.last_updated = tour_standings.last_updated
+
         # Generate index page
-        generated_files.append(self.generate_index(tour_standings, tour_config))
+        generated_files.append(
+            self.generate_index(tour_standings, tour_config, women_gc)
+        )
 
         # Generate GC page
         generated_files.append(

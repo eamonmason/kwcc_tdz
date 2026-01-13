@@ -132,6 +132,61 @@ Example: Raw 45:10 (+1 min penalty = 46:10) beats raw 45:30 (no penalty = 45:30)
 - `config/event_ids.json` - ZwiftPower event IDs per stage (optional - system will auto-discover if missing)
 - `config/event_timestamps.json` - Event start times for penalty calculation (populated by discovery)
 
+## Manual Result Entry
+
+For riders who haven't opted into ZwiftPower data sharing (at my.zwift.com/profile/connections), results can be added manually.
+
+### S3 Structure
+
+```
+s3://kwcc-tdz-2026-data-prod/results/
+├── tdz-2026/           # Automatic results from ZwiftPower
+│   └── stage_X_group_Y.json
+└── manual/             # Manual result overrides
+    └── stage_X_group_Y.json
+```
+
+### Manual Entry Format
+
+Create a JSON file matching the StageResult model:
+
+```json
+[
+  {
+    "rider_name": "Laura McMullen",
+    "rider_id": "12345",
+    "stage_number": 1,
+    "race_group": "B",
+    "handicap_group": "B3",
+    "raw_time_seconds": 2850,
+    "handicap_seconds": 240,
+    "penalty_seconds": 0,
+    "penalty_reason": "",
+    "raw_position": 1,
+    "is_provisional": false,
+    "event_id": "manual:strava:123456",
+    "timestamp": "2026-01-13T17:00:00Z",
+    "guest": false,
+    "gender": "F"
+  }
+]
+```
+
+### Adding a Manual Result
+
+```bash
+# 1. Create JSON file with result data
+# 2. Upload to S3
+AWS_PROFILE=personal aws s3 cp /tmp/manual_result.json \
+  s3://kwcc-tdz-2026-data-prod/results/manual/stage_1_group_B.json
+
+# 3. Trigger processor to regenerate website
+AWS_PROFILE=personal aws lambda invoke --region eu-west-1 \
+  --function-name kwcc-tdz-processor-prod --payload '{}' /tmp/output.json
+```
+
+Manual results take precedence over automatic results for the same rider_id.
+
 ## Dynamic Event Discovery
 
 When `event_ids.json` is empty or missing for a stage:

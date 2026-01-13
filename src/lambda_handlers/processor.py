@@ -39,6 +39,70 @@ def load_stage_results_from_s3(
         return []
 
 
+def load_manual_results_from_s3(
+    bucket: str,
+    stage: int,
+    group: str,
+) -> list[StageResult]:
+    """Load manual result overrides from S3.
+
+    Manual results are stored separately from automatic results and
+    take precedence when merged. This allows adding results for riders
+    who haven't opted into ZwiftPower data sharing.
+
+    Args:
+        bucket: S3 bucket name
+        stage: Stage number (1-6)
+        group: Race group (A, B, or uncategorized)
+
+    Returns:
+        List of manual StageResult entries, empty if no file exists
+    """
+    key = f"results/manual/stage_{stage}_group_{group}.json"
+
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        data = json.loads(response["Body"].read().decode("utf-8"))
+        results = [StageResult.model_validate(r) for r in data]
+        if results:
+            logger.info(
+                f"Loaded {len(results)} manual results for stage {stage} group {group}"
+            )
+        return results
+    except s3_client.exceptions.NoSuchKey:
+        return []
+
+
+def merge_results(
+    automatic: list[StageResult],
+    manual: list[StageResult],
+) -> list[StageResult]:
+    """Merge manual results with automatic results.
+
+    Manual results take precedence over automatic results for the same rider_id.
+    This allows overriding or adding results for riders missing from ZwiftPower.
+
+    Args:
+        automatic: Results fetched automatically from ZwiftPower
+        manual: Manually entered results
+
+    Returns:
+        Merged list with manual results overriding automatic by rider_id
+    """
+    # Create lookup of automatic results by rider_id
+    result_map = {r.rider_id: r for r in automatic}
+
+    # Override with manual results
+    for manual_result in manual:
+        result_map[manual_result.rider_id] = manual_result
+        logger.info(
+            f"Manual override for rider {manual_result.rider_name} "
+            f"({manual_result.rider_id})"
+        )
+
+    return list(result_map.values())
+
+
 def load_all_results_from_s3(
     bucket: str,
     tour_id: str = "tdz-2026",
@@ -47,23 +111,44 @@ def load_all_results_from_s3(
     dict[int, list[StageResult]],
     dict[int, list[StageResult]],
 ]:
-    """Load all stage results from S3."""
+    """Load all stage results from S3, including manual overrides.
+
+    Loads automatic results from ZwiftPower and merges with any manual
+    result overrides. Manual results take precedence by rider_id.
+    """
     group_a_results: dict[int, list[StageResult]] = {}
     group_b_results: dict[int, list[StageResult]] = {}
     uncategorized_results: dict[int, list[StageResult]] = {}
 
     for stage in range(1, 7):
+        # Load automatic results from ZwiftPower
         a_results = load_stage_results_from_s3(bucket, stage, "A", tour_id)
+
+        # Load and merge manual results (manual overrides automatic by rider_id)
+        manual_a = load_manual_results_from_s3(bucket, stage, "A")
+        if manual_a:
+            a_results = merge_results(a_results, manual_a)
+
         if a_results:
             group_a_results[stage] = a_results
 
+        # Same for Group B
         b_results = load_stage_results_from_s3(bucket, stage, "B", tour_id)
+        manual_b = load_manual_results_from_s3(bucket, stage, "B")
+        if manual_b:
+            b_results = merge_results(b_results, manual_b)
+
         if b_results:
             group_b_results[stage] = b_results
 
+        # Same for uncategorized
         uncat_results = load_stage_results_from_s3(
             bucket, stage, "uncategorized", tour_id
         )
+        manual_uncat = load_manual_results_from_s3(bucket, stage, "uncategorized")
+        if manual_uncat:
+            uncat_results = merge_results(uncat_results, manual_uncat)
+
         if uncat_results:
             uncategorized_results[stage] = uncat_results
 

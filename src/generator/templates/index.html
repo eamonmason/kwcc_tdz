@@ -149,6 +149,47 @@
         <p class="no-results">No riders have completed all stages yet</p>
         {% endif %}
     </section>
+
+    <section class="group-standings">
+        <h3>Women's GC</h3>
+        {% if women_gc and women_gc.standings %}
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Rider</th>
+                    <th>Handicap</th>
+                    <th>Total Time</th>
+                    <th>Gap</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for standing in women_gc.standings[:10] %}
+                <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
+                    <td class="position">{{ standing.position }}</td>
+                    <td class="rider-name">
+                        <div class="rider-name-with-avatar">
+                            <img src="{{ url_prefix }}avatars/{{ standing.rider_id }}.jpg"
+                                 alt="{{ standing.rider_name }}"
+                                 class="rider-avatar"
+                                 onerror="this.classList.add('loading-error')">
+                            <span>{{ standing.rider_name }}</span>
+                        </div>
+                    </td>
+                    <td class="handicap">{{ standing.handicap_group }}</td>
+                    <td class="time">{{ standing.total_time_display }}</td>
+                    <td class="gap">{{ standing.gap_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if women_gc.standings|length > 10 %}
+        <p class="view-all"><a href="gc.html#women-gc">View all {{ women_gc.standings|length }} riders &rarr;</a></p>
+        {% endif %}
+        {% else %}
+        <p class="no-results">No women riders have completed all stages yet</p>
+        {% endif %}
+    </section>
 </div>
 
 <section class="handicap-info">
