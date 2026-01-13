@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """CDK app entry point for KWCC TdZ infrastructure."""
 
+import os
+
 import aws_cdk as cdk
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
@@ -9,7 +11,9 @@ from stacks.github_actions_stack import GitHubActionsStack
 app = cdk.App()
 
 # Environment configuration
+# Account must be specified for cross-region certificate support (ACM in us-east-1 for CloudFront)
 env = cdk.Environment(
+    account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
     region="eu-west-1",
 )
 

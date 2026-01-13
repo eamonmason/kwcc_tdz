@@ -7,6 +7,9 @@ from aws_cdk import (
     Stack,
 )
 from aws_cdk import (
+    aws_certificatemanager as acm,
+)
+from aws_cdk import (
     aws_cloudfront as cloudfront,
 )
 from aws_cdk import (
@@ -75,6 +78,15 @@ class DataStack(Stack):
             ),
         )
 
+        # ACM Certificate for custom domain (must be in us-east-1 for CloudFront)
+        # Note: Certificate must be manually created in us-east-1 or use cross-region reference
+        self.certificate = acm.Certificate(
+            self,
+            "WebsiteCertificate",
+            domain_name="tdz.kingstonwheelers.cc",
+            validation=acm.CertificateValidation.from_dns(),
+        )
+
         # CloudFront distribution for website
         # Using S3BucketOrigin with OAC (Origin Access Control)
         s3_origin = origins.S3BucketOrigin.with_origin_access_control(
@@ -85,6 +97,8 @@ class DataStack(Stack):
             self,
             "WebsiteDistribution",
             comment=f"KWCC Tour de Zwift 2026 ({environment})",
+            domain_names=["tdz.kingstonwheelers.cc"],
+            certificate=self.certificate,
             default_behavior=cloudfront.BehaviorOptions(
                 origin=s3_origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -149,6 +163,13 @@ class DataStack(Stack):
         CfnOutput(
             self,
             "WebsiteUrl",
-            value=f"https://{self.distribution.distribution_domain_name}",
+            value="https://tdz.kingstonwheelers.cc",
             description="Website URL",
+        )
+
+        CfnOutput(
+            self,
+            "CertificateArn",
+            value=self.certificate.certificate_arn,
+            description="ACM certificate ARN",
         )
