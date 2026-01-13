@@ -60,12 +60,18 @@ kwcc_tdz/
 └── .github/workflows/  # GitHub Actions
 ```
 
-## AWS Resources (eu-west-1)
+## AWS Resources
+
+### eu-west-1 (Primary Region)
 
 - **S3 Buckets**: `kwcc-tdz-2026-data-prod` (data), `kwcc-tdz-2026-website-prod` (static site)
 - **Lambda Functions**: `kwcc-tdz-data-fetcher-prod`, `kwcc-tdz-processor-prod`
-- **CloudFront**: Distribution for website CDN
+- **CloudFront**: Distribution `E2M7BDO7EQ2UY6` with custom domain `tdz.kingstonwheelers.cc`
 - **Secrets Manager**: ZwiftPower credentials
+
+### us-east-1 (Certificate Region)
+
+- **ACM Certificate**: `tdz.kingstonwheelers.cc` (CloudFront requires certificates in us-east-1)
 
 ## Data Flow
 
@@ -80,6 +86,7 @@ kwcc_tdz/
 5. Stored as JSON in S3 (`results/tdz-2026/stage_X_group_Y.json`)
 6. `processor` Lambda generates static HTML from processed results
 7. Website uploaded to S3, CloudFront cache invalidated
+8. Website accessible at `https://tdz.kingstonwheelers.cc`
 
 ## Handicap System
 

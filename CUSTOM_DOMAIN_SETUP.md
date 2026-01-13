@@ -1,95 +1,112 @@
 # Custom Domain Setup Guide
 
-This guide explains how to configure the custom domain `tdz.kingstonwheelers.cc` for the CloudFront distribution.
+✅ **Setup Status**: COMPLETE - Website is live at `https://tdz.kingstonwheelers.cc`
 
-## Overview
+This guide documents the custom domain configuration for the CloudFront distribution.
 
-The infrastructure has been updated to:
+## Completed Configuration
 
-- Create an ACM certificate for `tdz.kingstonwheelers.cc` (automatically in us-east-1 for CloudFront)
-- Configure CloudFront to use the custom domain
-- Enable HTTPS with automatic certificate validation
+The infrastructure has been successfully deployed with:
 
-## Deployment Steps
+- ✅ ACM certificate created and validated for `tdz.kingstonwheelers.cc` in us-east-1
+- ✅ CloudFront distribution configured with custom domain
+- ✅ Cross-region references between us-east-1 (certificate) and eu-west-1 (CloudFront)
+- ✅ DNS records configured in Cloudflare
+- ✅ Website accessible at `https://tdz.kingstonwheelers.cc`
 
-### 1. Deploy the Updated CDK Stack
+## Current Infrastructure Details
 
-Deploy the updated infrastructure:
+- **Certificate ARN**: `arn:aws:acm:us-east-1:002681522526:certificate/89567d7c-a746-4a7c-9446-48ce6028bdb3`
+- **Certificate Status**: ISSUED (validated on 2026-01-13)
+- **CloudFront Distribution ID**: `E2M7BDO7EQ2UY6`
+- **CloudFront Domain**: `d32eiotfjzq7jj.cloudfront.net`
+- **Custom Domain**: `tdz.kingstonwheelers.cc`
 
-```bash
-cd infrastructure
-AWS_PROFILE=personal cdk deploy KwccTdzProdDataStack
+## Architecture
+
+The setup uses a multi-region architecture:
+
+- **us-east-1**: ACM certificate (required by CloudFront)
+- **eu-west-1**: CloudFront distribution, S3 buckets, Lambda functions
+- **Cross-region references**: CDK manages certificate ARN sharing between regions
+
+## Cloudflare DNS Configuration
+
+The following DNS records were configured in Cloudflare for the `kingstonwheelers.cc` domain:
+
+### Certificate Validation Record
+
+```
+Type:   CNAME
+Name:   _2345c15efb5c8c690542496c8584e164.tdz.kingstonwheelers.cc
+Target: _93c3f0aac5b5d674f42413343efe3521.jkddzztszm.acm-validations.aws.
+Proxy:  DNS only (grey cloud)
+TTL:    Auto
 ```
 
-**Important**: During deployment, CDK will create an ACM certificate and show validation records. Note these down - you'll need them for Cloudflare DNS configuration.
+**Purpose**: ACM certificate DNS validation. This record proves domain ownership to AWS Certificate Manager.
 
-The output will include something like:
+### Website CNAME Record
 
 ```
-Certificate validation records:
-  Name: _abc123.tdz.kingstonwheelers.cc
-  Type: CNAME
-  Value: _xyz456.acm-validations.aws.
+Type:   CNAME
+Name:   tdz
+Target: d32eiotfjzq7jj.cloudfront.net
+Proxy:  DNS only (grey cloud)
+TTL:    Auto
 ```
 
-### 2. Configure Cloudflare DNS
+**Purpose**: Routes traffic from `tdz.kingstonwheelers.cc` to the CloudFront distribution.
 
-Once the deployment completes, you need to add two DNS records in Cloudflare:
+**Important**: The proxy status must be "DNS only" (grey cloud), not "Proxied" (orange cloud), to avoid double-CDN overhead (Cloudflare + CloudFront).
 
-#### A. Certificate Validation Record (CNAME)
+## Deployment Process (For Reference)
 
-Add the validation CNAME record shown in the CDK deployment output:
+The deployment was completed in the following order:
 
-1. Log in to Cloudflare dashboard
-2. Navigate to kingstonwheelers.cc domain
-3. Go to DNS settings
-4. Add a new CNAME record:
-   - **Type**: CNAME
-   - **Name**: `_abc123.tdz.kingstonwheelers.cc` (from CDK output)
-   - **Target**: `_xyz456.acm-validations.aws.` (from CDK output)
-   - **Proxy status**: DNS only (grey cloud)
-   - **TTL**: Auto
+### 1. IAM Role Updates
 
-#### B. Website CNAME Record
+Updated GitHub Actions IAM role to support cross-region deployments:
+- Added CDK bootstrap permissions for us-east-1
+- Added CloudFormation permissions for us-east-1
+- Added S3 CDK assets permissions for us-east-1
+- Added ACM Certificate Manager permissions for us-east-1
 
-Add a CNAME pointing to the CloudFront distribution:
+### 2. CDK Stack Deployment
 
-1. Get the CloudFront domain name from CDK output: `DistributionDomainName`
-2. In Cloudflare DNS settings, add:
-   - **Type**: CNAME
-   - **Name**: `tdz`
-   - **Target**: `<CloudFront-domain>.cloudfront.net` (e.g., `d111111abcdef8.cloudfront.net`)
-   - **Proxy status**: DNS only (grey cloud) - **Important: Must be grey cloud for ACM validation**
-   - **TTL**: Auto
+Deployed three stacks in sequence:
 
-**Note**: Keep the proxy status as "DNS only" (grey cloud) for ACM certificate validation to work. You can optionally enable Cloudflare proxy (orange cloud) after the certificate is validated, but this is not recommended as it will double-proxy (Cloudflare + CloudFront).
+1. **KwccTdzProdCertificateStack** (us-east-1)
+   - ACM certificate creation
+   - Cross-region export writer for certificate ARN
+   - Waited for DNS validation (~8 minutes after DNS records added)
 
-### 3. Verify Certificate Validation
+2. **KwccTdzProdDataStack** (eu-west-1)
+   - S3 buckets for data and website
+   - CloudFront distribution with custom domain
+   - Cross-region export reader to import certificate ARN
+   - Secrets Manager for ZwiftPower credentials
 
-After adding the DNS records, AWS ACM will automatically validate the certificate. This usually takes 5-30 minutes.
+3. **KwccTdzProdComputeStack** (eu-west-1)
+   - Lambda functions for data fetching and processing
+   - EventBridge rules for scheduled execution
 
-You can check the certificate status:
+### 3. DNS Configuration
 
-```bash
-AWS_PROFILE=personal aws acm list-certificates --region us-east-1 \
-  --certificate-statuses ISSUED PENDING_VALIDATION
-```
+Added DNS records in Cloudflare in two stages:
+1. Certificate validation record (triggered certificate issuance)
+2. Website CNAME record (enabled custom domain access)
 
-Look for the certificate with domain `tdz.kingstonwheelers.cc`.
+Total deployment time: ~40 minutes (including certificate validation wait time)
 
-### 4. Test the Website
+## Verification
 
-Once the certificate is validated (status: ISSUED), test the website:
+The website is now accessible at `https://tdz.kingstonwheelers.cc` with:
 
-```bash
-# Test DNS resolution
-dig tdz.kingstonwheelers.cc
-
-# Test HTTPS access
-curl -I https://tdz.kingstonwheelers.cc
-```
-
-The website should be accessible at `https://tdz.kingstonwheelers.cc`.
+- ✅ Valid SSL/TLS certificate (issued by AWS Certificate Manager)
+- ✅ CloudFront CDN for global content delivery
+- ✅ HTTPS-only access (HTTP redirects to HTTPS)
+- ✅ Custom error pages for 403/404 errors
 
 ## Troubleshooting
 
