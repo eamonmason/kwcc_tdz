@@ -10,7 +10,7 @@ class GCStanding(BaseModel):
 
     rider_name: str = Field(..., description="Rider display name")
     rider_id: str = Field(..., description="ZwiftPower user ID")
-    race_group: str = Field(..., pattern=r"^[AB]$")
+    race_group: str = Field(..., pattern=r"^([AB]|Women)$")
     handicap_group: str = Field(..., pattern=r"^[AB][1-4]$")
     total_adjusted_time_seconds: int = Field(..., ge=0)
     stages_completed: int = Field(..., ge=0, le=6)
@@ -60,7 +60,7 @@ class GCStanding(BaseModel):
 class GCStandings(BaseModel):
     """Collection of GC standings for a race group."""
 
-    race_group: str = Field(..., pattern=r"^[AB]$")
+    race_group: str = Field(..., pattern=r"^([AB]|Women)$")
     standings: list[GCStanding] = Field(default_factory=list)
     total_stages: int = Field(default=6)
     completed_stages: int = Field(default=0, ge=0, le=6)
