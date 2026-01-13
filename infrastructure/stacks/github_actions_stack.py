@@ -62,6 +62,7 @@ class GitHubActionsStack(Stack):
         )
 
         # CDK Bootstrap permissions (read CDK toolkit stack)
+        # Support eu-west-1 (main) and us-east-1 (for CloudFront certificates)
         github_actions_role.add_to_policy(
             iam.PolicyStatement(
                 sid="CDKBootstrapRead",
@@ -71,13 +72,16 @@ class GitHubActionsStack(Stack):
                     "ssm:GetParameter",
                 ],
                 resources=[
-                    f"arn:aws:cloudformation:{self.region}:{self.account}:stack/CDKToolkit/*",
-                    f"arn:aws:ssm:{self.region}:{self.account}:parameter/cdk-bootstrap/*",
+                    f"arn:aws:cloudformation:eu-west-1:{self.account}:stack/CDKToolkit/*",
+                    f"arn:aws:ssm:eu-west-1:{self.account}:parameter/cdk-bootstrap/*",
+                    f"arn:aws:cloudformation:us-east-1:{self.account}:stack/CDKToolkit/*",
+                    f"arn:aws:ssm:us-east-1:{self.account}:parameter/cdk-bootstrap/*",
                 ],
             )
         )
 
         # CloudFormation permissions for application stacks
+        # Support eu-west-1 (main) and us-east-1 (for CloudFront certificates)
         github_actions_role.add_to_policy(
             iam.PolicyStatement(
                 sid="CloudFormationDeploy",
@@ -98,12 +102,14 @@ class GitHubActionsStack(Stack):
                     "cloudformation:ExecuteChangeSet",
                 ],
                 resources=[
-                    f"arn:aws:cloudformation:{self.region}:{self.account}:stack/KwccTdz*/*",
+                    f"arn:aws:cloudformation:eu-west-1:{self.account}:stack/KwccTdz*/*",
+                    f"arn:aws:cloudformation:us-east-1:{self.account}:stack/KwccTdz*/*",
                 ],
             )
         )
 
         # S3 permissions for CDK assets bucket
+        # Support eu-west-1 (main) and us-east-1 (for CloudFront certificates)
         github_actions_role.add_to_policy(
             iam.PolicyStatement(
                 sid="CDKAssetsBucket",
@@ -116,8 +122,10 @@ class GitHubActionsStack(Stack):
                     "s3:GetBucketLocation",
                 ],
                 resources=[
-                    f"arn:aws:s3:::cdk-*-assets-{self.account}-{self.region}",
-                    f"arn:aws:s3:::cdk-*-assets-{self.account}-{self.region}/*",
+                    f"arn:aws:s3:::cdk-*-assets-{self.account}-eu-west-1",
+                    f"arn:aws:s3:::cdk-*-assets-{self.account}-eu-west-1/*",
+                    f"arn:aws:s3:::cdk-*-assets-{self.account}-us-east-1",
+                    f"arn:aws:s3:::cdk-*-assets-{self.account}-us-east-1/*",
                 ],
             )
         )
@@ -238,6 +246,7 @@ class GitHubActionsStack(Stack):
         )
 
         # CDK bootstrap roles - required for CDK deploy
+        # Support eu-west-1 (main) and us-east-1 (for CloudFront certificates)
         github_actions_role.add_to_policy(
             iam.PolicyStatement(
                 sid="CDKBootstrapRoles",
@@ -247,7 +256,8 @@ class GitHubActionsStack(Stack):
                     "iam:PassRole",
                 ],
                 resources=[
-                    f"arn:aws:iam::{self.account}:role/cdk-*-{self.account}-{self.region}",
+                    f"arn:aws:iam::{self.account}:role/cdk-*-{self.account}-eu-west-1",
+                    f"arn:aws:iam::{self.account}:role/cdk-*-{self.account}-us-east-1",
                 ],
             )
         )
@@ -276,6 +286,26 @@ class GitHubActionsStack(Stack):
                     "cloudfront:ListOriginAccessControls",
                 ],
                 resources=["*"],  # CloudFront resources are global
+            )
+        )
+
+        # ACM Certificate Manager permissions (for CloudFront certificates in us-east-1)
+        github_actions_role.add_to_policy(
+            iam.PolicyStatement(
+                sid="ACMCertificateManagement",
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "acm:RequestCertificate",
+                    "acm:DeleteCertificate",
+                    "acm:DescribeCertificate",
+                    "acm:ListCertificates",
+                    "acm:AddTagsToCertificate",
+                    "acm:RemoveTagsFromCertificate",
+                    "acm:ListTagsForCertificate",
+                ],
+                resources=[
+                    f"arn:aws:acm:us-east-1:{self.account}:certificate/*",
+                ],
             )
         )
 
