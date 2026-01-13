@@ -79,6 +79,7 @@ def apply_handicap_and_penalty(
         event_id=race_result.event_id,
         timestamp=race_result.timestamp,
         guest=rider.guest,
+        gender=rider.gender,
     )
 
 
@@ -167,25 +168,34 @@ def process_stage_results(
             # Uncategorized rider (no handicap group assigned)
             uncategorized_results.append(stage_result)
 
-    # Keep only best result per rider (based on adjusted time including penalties)
+    # Keep only best result per rider (based on raw time)
     group_a_results = get_best_result_per_rider(group_a_results)
     group_b_results = get_best_result_per_rider(group_b_results)
     uncategorized_results = get_best_result_per_rider(uncategorized_results)
 
-    # Sort by adjusted time and calculate positions/gaps
-    group_a_results = _calculate_positions_and_gaps(group_a_results)
-    group_b_results = _calculate_positions_and_gaps(group_b_results)
-    uncategorized_results = _calculate_positions_and_gaps(uncategorized_results)
+    # Sort by stage time (raw + penalty) and calculate positions/gaps for stage display
+    group_a_results = _calculate_positions_and_gaps(
+        group_a_results, use_stage_time=True
+    )
+    group_b_results = _calculate_positions_and_gaps(
+        group_b_results, use_stage_time=True
+    )
+    uncategorized_results = _calculate_positions_and_gaps(
+        uncategorized_results, use_stage_time=True
+    )
 
     return group_a_results, group_b_results, uncategorized_results
 
 
-def _calculate_positions_and_gaps(results: list[StageResult]) -> list[StageResult]:
+def _calculate_positions_and_gaps(
+    results: list[StageResult], use_stage_time: bool = False
+) -> list[StageResult]:
     """
     Sort results by adjusted time and calculate positions and gaps.
 
     Args:
         results: List of stage results to process
+        use_stage_time: If True, sort by stage_time_seconds (raw + penalty) instead of adjusted_time_seconds
 
     Returns:
         Sorted list with positions and gaps calculated
@@ -193,14 +203,21 @@ def _calculate_positions_and_gaps(results: list[StageResult]) -> list[StageResul
     if not results:
         return results
 
-    # Sort by adjusted time (includes raw time + handicap + penalty)
-    sorted_results = sorted(results, key=lambda r: r.adjusted_time_seconds)
+    # Sort by adjusted time (includes raw time + handicap + penalty) or stage time (raw + penalty)
+    if use_stage_time:
+        sorted_results = sorted(results, key=lambda r: r.stage_time_seconds)
+        leader_time = sorted_results[0].stage_time_seconds
 
-    leader_time = sorted_results[0].adjusted_time_seconds
+        for i, result in enumerate(sorted_results):
+            result.position = i + 1
+            result.gap_to_leader = result.stage_time_seconds - leader_time
+    else:
+        sorted_results = sorted(results, key=lambda r: r.adjusted_time_seconds)
+        leader_time = sorted_results[0].adjusted_time_seconds
 
-    for i, result in enumerate(sorted_results):
-        result.position = i + 1
-        result.gap_to_leader = result.adjusted_time_seconds - leader_time
+        for i, result in enumerate(sorted_results):
+            result.position = i + 1
+            result.gap_to_leader = result.adjusted_time_seconds - leader_time
 
     return sorted_results
 

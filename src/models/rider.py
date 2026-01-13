@@ -25,6 +25,11 @@ class Rider(BaseModel):
         default=False,
         description="Guest rider (non-club member, excluded from GC by default)",
     )
+    gender: str | None = Field(
+        default=None,
+        pattern=r"^[MF]$",
+        description="Rider gender: M (male) or F (female), None if not specified",
+    )
 
     @computed_field
     @property
@@ -96,3 +101,11 @@ class RiderRegistry(BaseModel):
     def get_guest_riders(self) -> list[Rider]:
         """Get all guest riders."""
         return [r for r in self.riders if r.guest]
+
+    def get_women_riders(self) -> list[Rider]:
+        """Get all women riders."""
+        return [r for r in self.riders if r.gender == "F"]
+
+    def get_men_riders(self) -> list[Rider]:
+        """Get all men riders."""
+        return [r for r in self.riders if r.gender == "M"]

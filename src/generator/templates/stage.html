@@ -210,12 +210,11 @@
                     <tr>
                         <th class="sortable" data-sort="position" data-type="number">Pos</th>
                         <th class="sortable" data-sort="rider_name" data-type="string">Rider</th>
+                        <th class="sortable" data-sort="stage_time_seconds" data-type="number">Stage Time</th>
+                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
                         <th class="sortable" data-sort="handicap_group" data-type="string">Handicap</th>
                         <th class="sortable" data-sort="raw_time_seconds" data-type="number">Raw Time</th>
-                        <th class="sortable" data-sort="handicap_seconds" data-type="number">Handicap Adj</th>
                         <th class="sortable" data-sort="penalty_seconds" data-type="number">Penalty</th>
-                        <th class="sortable" data-sort="adjusted_time_seconds" data-type="number">Adjusted Time</th>
-                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -223,12 +222,11 @@
                     <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}{% if result.guest %} guest-row{% endif %}"
                         data-position="{{ result.position }}"
                         data-rider_name="{{ result.rider_name }}"
+                        data-stage_time_seconds="{{ result.stage_time_seconds }}"
+                        data-gap_to_leader="{{ result.gap_to_leader }}"
                         data-handicap_group="{{ result.handicap_group }}"
                         data-raw_time_seconds="{{ result.raw_time_seconds }}"
-                        data-handicap_seconds="{{ result.handicap_seconds }}"
                         data-penalty_seconds="{{ result.penalty_seconds }}"
-                        data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
-                        data-gap_to_leader="{{ result.gap_to_leader }}"
                         data-guest="{{ 'true' if result.guest else 'false' }}">
                         <td class="position">
                             {% if result.position == 1 %}
@@ -250,6 +248,8 @@
                             <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
                             {% endif %}
                         </td>
+                        <td class="time stage-time"><strong>{{ result.stage_time_display }}</strong></td>
+                        <td class="gap">{{ result.gap_display }}</td>
                         <td class="handicap">{{ result.handicap_group }}</td>
                         <td class="time raw-time">
                             {% if result.event_id %}
@@ -260,15 +260,12 @@
                             {{ result.raw_time_display }}
                             {% endif %}
                         </td>
-                        <td class="time handicap-adj">{{ result.handicap_display }}</td>
                         <td class="time penalty {% if result.has_penalty %}penalty-indicator{% endif %}">
                             {{ result.penalty_display }}
                             {% if result.penalty_reason %}
                             <span class="penalty-tooltip" title="{{ result.penalty_reason }}">&#9432;</span>
                             {% endif %}
                         </td>
-                        <td class="time adjusted-time"><strong>{{ result.adjusted_time_display }}</strong></td>
-                        <td class="gap">{{ result.gap_display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -289,12 +286,11 @@
                     <tr>
                         <th class="sortable" data-sort="position" data-type="number">Pos</th>
                         <th class="sortable" data-sort="rider_name" data-type="string">Rider</th>
+                        <th class="sortable" data-sort="stage_time_seconds" data-type="number">Stage Time</th>
+                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
                         <th class="sortable" data-sort="handicap_group" data-type="string">Handicap</th>
                         <th class="sortable" data-sort="raw_time_seconds" data-type="number">Raw Time</th>
-                        <th class="sortable" data-sort="handicap_seconds" data-type="number">Handicap Adj</th>
                         <th class="sortable" data-sort="penalty_seconds" data-type="number">Penalty</th>
-                        <th class="sortable" data-sort="adjusted_time_seconds" data-type="number">Adjusted Time</th>
-                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -302,12 +298,11 @@
                     <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}{% if result.guest %} guest-row{% endif %}"
                         data-position="{{ result.position }}"
                         data-rider_name="{{ result.rider_name }}"
+                        data-stage_time_seconds="{{ result.stage_time_seconds }}"
+                        data-gap_to_leader="{{ result.gap_to_leader }}"
                         data-handicap_group="{{ result.handicap_group }}"
                         data-raw_time_seconds="{{ result.raw_time_seconds }}"
-                        data-handicap_seconds="{{ result.handicap_seconds }}"
                         data-penalty_seconds="{{ result.penalty_seconds }}"
-                        data-adjusted_time_seconds="{{ result.adjusted_time_seconds }}"
-                        data-gap_to_leader="{{ result.gap_to_leader }}"
                         data-guest="{{ 'true' if result.guest else 'false' }}">
                         <td class="position">
                             {% if result.position == 1 %}
@@ -329,6 +324,8 @@
                             <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
                             {% endif %}
                         </td>
+                        <td class="time stage-time"><strong>{{ result.stage_time_display }}</strong></td>
+                        <td class="gap">{{ result.gap_display }}</td>
                         <td class="handicap">{{ result.handicap_group }}</td>
                         <td class="time raw-time">
                             {% if result.event_id %}
@@ -339,15 +336,12 @@
                             {{ result.raw_time_display }}
                             {% endif %}
                         </td>
-                        <td class="time handicap-adj">{{ result.handicap_display }}</td>
                         <td class="time penalty {% if result.has_penalty %}penalty-indicator{% endif %}">
                             {{ result.penalty_display }}
                             {% if result.penalty_reason %}
                             <span class="penalty-tooltip" title="{{ result.penalty_reason }}">&#9432;</span>
                             {% endif %}
                         </td>
-                        <td class="time adjusted-time"><strong>{{ result.adjusted_time_display }}</strong></td>
-                        <td class="gap">{{ result.gap_display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -426,7 +420,8 @@
 <section class="penalty-legend">
     <h4>Scoring Information</h4>
     <p>
-        <strong>Adjusted Time</strong> = Raw Time + Handicap + Penalty
+        <strong>Stage Time</strong> = Raw Time + Penalty (used for stage positions)<br>
+        <strong>GC Time</strong> = Raw Time + Handicap + Penalty (used for overall classification)
     </p>
     {% if has_penalty_events %}
     <p>

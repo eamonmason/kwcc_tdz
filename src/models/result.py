@@ -50,6 +50,16 @@ class StageResult(BaseModel):
         default=False,
         description="Guest rider (non-club member, excluded from GC by default)",
     )
+    gender: str | None = Field(
+        default=None,
+        description="Rider gender: M (male) or F (female), None if not specified",
+    )
+
+    @computed_field
+    @property
+    def stage_time_seconds(self) -> int:
+        """Stage time = raw time + penalty (no handicap adjustment)."""
+        return self.raw_time_seconds + self.penalty_seconds
 
     @computed_field
     @property
@@ -96,6 +106,12 @@ class StageResult(BaseModel):
     def has_penalty(self) -> bool:
         """Check if result has a penalty."""
         return self.penalty_seconds > 0
+
+    @computed_field
+    @property
+    def stage_time_display(self) -> str:
+        """Format stage time as HH:MM:SS."""
+        return format_time(self.stage_time_seconds)
 
     @computed_field
     @property

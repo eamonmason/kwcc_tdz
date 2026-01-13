@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from src.fetcher.client import ZwiftPowerClient
 from src.fetcher.exceptions import ZwiftPowerEventNotFoundError
@@ -48,12 +48,12 @@ def search_events_api(
                 event.get("zid", "") or event.get("DT_RowId", "") or event.get("id", "")
             )
             if event_id and event_id not in [e["id"] for e in events]:
-                # Convert timestamp to date string
+                # Convert timestamp to date string (use UTC to ensure correct day-of-week)
                 timestamp = event.get("tm", 0)
                 event_date = None
                 if timestamp:
                     try:  # noqa: SIM105
-                        event_date = datetime.fromtimestamp(timestamp).strftime(
+                        event_date = datetime.fromtimestamp(timestamp, tz=UTC).strftime(
                             "%Y-%m-%d %H:%M"
                         )
                     except (ValueError, OSError):
@@ -396,7 +396,9 @@ def find_tdz_race_events_with_timestamps(
         if event_id not in seen_ids:
             # Convert timestamp to datetime
             event_ts = event.get("timestamp", 0)
-            event_datetime = datetime.fromtimestamp(event_ts) if event_ts else None
+            event_datetime = (
+                datetime.fromtimestamp(event_ts, tz=UTC) if event_ts else None
+            )
             events_with_timestamps.append((event_id, event_datetime))
             seen_ids.add(event_id)
 
@@ -411,7 +413,9 @@ def find_tdz_race_events_with_timestamps(
                 and event["id"] not in seen_ids
             ):
                 event_ts = event.get("timestamp", 0)
-                event_datetime = datetime.fromtimestamp(event_ts) if event_ts else None
+                event_datetime = (
+                    datetime.fromtimestamp(event_ts, tz=UTC) if event_ts else None
+                )
                 events_with_timestamps.append((event["id"], event_datetime))
                 seen_ids.add(event["id"])
 
