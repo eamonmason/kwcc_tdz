@@ -211,12 +211,12 @@ def handler(event, context):  # noqa: ARG001
                         )
 
                         # For remaining events without names, try fetching individually
-                        # Limit to first 150 events to avoid Lambda timeout
+                        # Limit to first 50 events to avoid Lambda timeout and rate limiting
                         still_missing = [
                             eid for eid in missing_names if eid not in event_names
                         ]
                         if still_missing:
-                            max_individual_fetches = min(150, len(still_missing))
+                            max_individual_fetches = min(50, len(still_missing))
                             logger.info(
                                 f"Fetching event details individually for up to {max_individual_fetches} "
                                 f"of {len(still_missing)} remaining events"
