@@ -102,6 +102,8 @@ jobs:
       - name: CDK Deploy
         working-directory: infrastructure
         run: |
+          # Deploy certificate stack first (us-east-1, required for CloudFront)
+          cdk deploy KwccTdzProdCertificateStack --require-approval never
           # Deploy application stacks (skip GitHubActionsStack - managed separately)
           cdk deploy KwccTdzProdDataStack KwccTdzProdComputeStack --require-approval never
 

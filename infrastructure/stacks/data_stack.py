@@ -32,6 +32,8 @@ class DataStack(Stack):
         scope: Construct,
         construct_id: str,
         environment: str = "prod",
+        domain_name: str | None = None,
+        certificate_arn: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -78,37 +80,25 @@ class DataStack(Stack):
             ),
         )
 
-        # ACM Certificate for custom domain (must be in us-east-1 for CloudFront)
-        # Note: Certificate must be manually created in us-east-1 or use cross-region reference
-        self.certificate = acm.Certificate(
-            self,
-            "WebsiteCertificate",
-            domain_name="tdz.kingstonwheelers.cc",
-            validation=acm.CertificateValidation.from_dns(),
-        )
-
         # CloudFront distribution for website
         # Using S3BucketOrigin with OAC (Origin Access Control)
         s3_origin = origins.S3BucketOrigin.with_origin_access_control(
             self.website_bucket,
         )
 
-        self.distribution = cloudfront.Distribution(
-            self,
-            "WebsiteDistribution",
-            comment=f"KWCC Tour de Zwift 2026 ({environment})",
-            domain_names=["tdz.kingstonwheelers.cc"],
-            certificate=self.certificate,
-            default_behavior=cloudfront.BehaviorOptions(
+        # Configure distribution with custom domain if provided
+        distribution_props = {
+            "comment": f"KWCC Tour de Zwift 2026 ({environment})",
+            "default_behavior": cloudfront.BehaviorOptions(
                 origin=s3_origin,
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
                 cached_methods=cloudfront.CachedMethods.CACHE_GET_HEAD,
             ),
-            default_root_object="index.html",
-            price_class=cloudfront.PriceClass.PRICE_CLASS_100,
-            error_responses=[
+            "default_root_object": "index.html",
+            "price_class": cloudfront.PriceClass.PRICE_CLASS_100,
+            "error_responses": [
                 cloudfront.ErrorResponse(
                     http_status=403,
                     response_http_status=200,
@@ -122,6 +112,22 @@ class DataStack(Stack):
                     ttl=Duration.seconds(10),
                 ),
             ],
+        }
+
+        # Add custom domain configuration if certificate is provided
+        if domain_name and certificate_arn:
+            certificate = acm.Certificate.from_certificate_arn(
+                self,
+                "ImportedCertificate",
+                certificate_arn=certificate_arn,
+            )
+            distribution_props["domain_names"] = [domain_name]
+            distribution_props["certificate"] = certificate
+
+        self.distribution = cloudfront.Distribution(
+            self,
+            "WebsiteDistribution",
+            **distribution_props,
         )
 
         # Outputs
@@ -160,16 +166,15 @@ class DataStack(Stack):
             description="CloudFront distribution domain name",
         )
 
+        # Website URL output
+        website_url = (
+            f"https://{domain_name}"
+            if domain_name
+            else f"https://{self.distribution.distribution_domain_name}"
+        )
         CfnOutput(
             self,
             "WebsiteUrl",
-            value="https://tdz.kingstonwheelers.cc",
+            value=website_url,
             description="Website URL",
-        )
-
-        CfnOutput(
-            self,
-            "CertificateArn",
-            value=self.certificate.certificate_arn,
-            description="ACM certificate ARN",
         )

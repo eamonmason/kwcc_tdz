@@ -353,6 +353,80 @@
         {% endif %}
     </section>
 
+    {% if women_results %}
+    <section id="women-results" class="results-section">
+        <h3>Women's Results</h3>
+        <div class="table-container">
+            <table class="results-table sortable-table" data-default-sort="position" data-default-order="asc">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="position" data-type="number">Pos</th>
+                        <th class="sortable" data-sort="rider_name" data-type="string">Rider</th>
+                        <th class="sortable" data-sort="stage_time_seconds" data-type="number">Stage Time</th>
+                        <th class="sortable" data-sort="gap_to_leader" data-type="number">Gap</th>
+                        <th class="sortable" data-sort="handicap_group" data-type="string">Handicap</th>
+                        <th class="sortable" data-sort="raw_time_seconds" data-type="number">Raw Time</th>
+                        <th class="sortable" data-sort="penalty_seconds" data-type="number">Penalty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in women_results %}
+                    <tr class="{% if result.position <= 3 %}top-three{% endif %}{% if result.has_penalty %} penalty-row{% endif %}{% if result.guest %} guest-row{% endif %}"
+                        data-position="{{ result.position }}"
+                        data-rider_name="{{ result.rider_name }}"
+                        data-stage_time_seconds="{{ result.stage_time_seconds }}"
+                        data-gap_to_leader="{{ result.gap_to_leader }}"
+                        data-handicap_group="{{ result.handicap_group }}"
+                        data-raw_time_seconds="{{ result.raw_time_seconds }}"
+                        data-penalty_seconds="{{ result.penalty_seconds }}"
+                        data-guest="{{ 'true' if result.guest else 'false' }}">
+                        <td class="position">
+                            {% if result.position == 1 %}
+                            <span class="medal gold">&#129351;</span>
+                            {% elif result.position == 2 %}
+                            <span class="medal silver">&#129352;</span>
+                            {% elif result.position == 3 %}
+                            <span class="medal bronze">&#129353;</span>
+                            {% else %}
+                            {{ result.position }}
+                            {% endif %}
+                        </td>
+                        <td class="rider-name">
+                            {{ result.rider_name }}
+                            {% if result.guest %}
+                            <span class="guest-indicator" title="Guest rider (non-club member)">Guest</span>
+                            {% endif %}
+                            {% if result.has_penalty %}
+                            <span class="penalty-indicator" title="{{ result.penalty_reason }}">*</span>
+                            {% endif %}
+                        </td>
+                        <td class="time stage-time"><strong>{{ result.stage_time_display }}</strong></td>
+                        <td class="gap">{{ result.gap_display }}</td>
+                        <td class="handicap">{{ result.handicap_group }}</td>
+                        <td class="time raw-time">
+                            {% if result.event_id %}
+                            <a href="https://zwiftpower.com/events.php?zid={{ result.event_id }}" target="_blank" title="View event on ZwiftPower">
+                                {{ result.raw_time_display }}
+                            </a>
+                            {% else %}
+                            {{ result.raw_time_display }}
+                            {% endif %}
+                        </td>
+                        <td class="time penalty {% if result.has_penalty %}penalty-indicator{% endif %}">
+                            {{ result.penalty_display }}
+                            {% if result.penalty_reason %}
+                            <span class="penalty-tooltip" title="{{ result.penalty_reason }}">&#9432;</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="results-count">{{ women_results|length }} riders completed</p>
+    </section>
+    {% endif %}
+
     {% if uncategorized_results %}
     <section class="group-results" id="uncategorized">
         <h3>Uncategorized Riders</h3>

@@ -184,6 +184,50 @@ def _calculate_gc_positions_and_gaps(
     return sorted_standings
 
 
+def calculate_women_gc_standings(
+    group_a_results: dict[int, list[StageResult]],
+    group_b_results: dict[int, list[StageResult]],
+    completed_stages: int,
+    is_provisional: bool = True,
+    include_guests: bool = False,
+) -> GCStandings:
+    """
+    Calculate women's GC standings from all groups combined.
+
+    Args:
+        group_a_results: Stage results for Group A
+        group_b_results: Stage results for Group B
+        completed_stages: Number of completed stages
+        is_provisional: Whether the tour is still in progress
+        include_guests: Whether to include guest riders in standings (default: False)
+
+    Returns:
+        GCStandings for all women combined
+    """
+    # Combine all results and filter for women
+    all_results: dict[int, list[StageResult]] = {}
+    for stage_num in range(1, completed_stages + 1):
+        stage_results = []
+        if stage_num in group_a_results:
+            stage_results.extend(group_a_results[stage_num])
+        if stage_num in group_b_results:
+            stage_results.extend(group_b_results[stage_num])
+
+        # Filter for women only
+        women_results = [r for r in stage_results if r.gender == "F"]
+        if women_results:
+            all_results[stage_num] = women_results
+
+    # Calculate standings for women (use "Women" as race_group label)
+    return calculate_gc_standings(
+        all_results,
+        "Women",
+        completed_stages,
+        is_provisional,
+        include_guests,
+    )
+
+
 def build_tour_standings(
     group_a_results: dict[int, list[StageResult]],
     group_b_results: dict[int, list[StageResult]],

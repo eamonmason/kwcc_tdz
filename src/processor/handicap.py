@@ -258,3 +258,41 @@ def get_best_result_per_rider(
             best_results[rider_id] = result
 
     return list(best_results.values())
+
+
+def filter_results_by_gender(
+    results: list[StageResult], gender: str | None
+) -> list[StageResult]:
+    """
+    Filter results by gender.
+
+    Args:
+        results: Stage results to filter
+        gender: Gender to filter by ("M", "F", or None for unspecified)
+
+    Returns:
+        Filtered list of results
+    """
+    return [r for r in results if r.gender == gender]
+
+
+def split_results_by_gender(
+    results: list[StageResult],
+) -> tuple[list[StageResult], list[StageResult]]:
+    """
+    Split results into women's and men's results.
+
+    Args:
+        results: Stage results to split
+
+    Returns:
+        Tuple of (women_results, men_results)
+    """
+    women_results = filter_results_by_gender(results, "F")
+    men_results = filter_results_by_gender(results, "M")
+
+    # Recalculate positions and gaps within each gender group
+    women_results = _calculate_positions_and_gaps(women_results, use_stage_time=True)
+    men_results = _calculate_positions_and_gaps(men_results, use_stage_time=True)
+
+    return women_results, men_results

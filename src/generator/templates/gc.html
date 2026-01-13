@@ -232,6 +232,68 @@
             </p>
             {% endif %}
         </section>
+
+        <section class="group-gc" id="women-gc-stage-{{ stage_num }}">
+            <h3>Women's GC</h3>
+            {% set stage_gc_women = gc_by_stage_women[stage_num] %}
+            {% if stage_gc_women.standings %}
+            <div class="guest-filter">
+                <input type="checkbox" id="show-guests-women-{{ stage_num }}" checked>
+                <label for="show-guests-women-{{ stage_num }}">Show guest riders</label>
+            </div>
+            <table class="results-table gc-table" id="women-gc-table-{{ stage_num }}">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Rider</th>
+                        <th>Handicap</th>
+                        <th>Total Time</th>
+                        <th>Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for standing in stage_gc_women.standings %}
+                    <tr class="{% if standing.position <= 3 %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}{% if standing.is_dns %} dns-row{% endif %}"
+                        data-guest="{{ 'true' if standing.guest else 'false' }}">
+                        <td class="position">
+                            {% if not standing.is_dns %}
+                                {% if standing.position == 1 %}
+                                <span class="medal gold">&#129351;</span>
+                                {% elif standing.position == 2 %}
+                                <span class="medal silver">&#129352;</span>
+                                {% elif standing.position == 3 %}
+                                <span class="medal bronze">&#129353;</span>
+                                {% else %}
+                                {{ standing.position }}
+                                {% endif %}
+                            {% else %}
+                                DNS
+                            {% endif %}
+                        </td>
+                        <td class="rider-name">
+                            {{ standing.rider_name }}
+                            {% if standing.guest %}
+                            <span class="guest-indicator">Guest</span>
+                            {% endif %}
+                        </td>
+                        <td class="handicap">{{ standing.handicap_group }}</td>
+                        <td class="time">{{ standing.total_time_display }}</td>
+                        <td class="gap">
+                            {% if not standing.is_dns %}
+                                {{ standing.gap_display }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="results-count">{{ stage_gc_women.standings|length }} riders in GC</p>
+            {% else %}
+            <p class="no-results">No women riders have completed all stages yet</p>
+            {% endif %}
+        </section>
     </div>
 </div>
 {% endfor %}

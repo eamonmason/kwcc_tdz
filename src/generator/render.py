@@ -161,7 +161,10 @@ class WebsiteGenerator:
         Returns:
             Path to generated file
         """
-        from src.processor.gc_standings import calculate_gc_standings
+        from src.processor.gc_standings import (
+            calculate_gc_standings,
+            calculate_women_gc_standings,
+        )
 
         # Calculate GC for each stage (1 through max available)
         max_stage = max(stage_results.keys()) if stage_results else 1
@@ -178,6 +181,7 @@ class WebsiteGenerator:
         # Calculate GC for each stage
         gc_by_stage_a = {}
         gc_by_stage_b = {}
+        gc_by_stage_women = {}
 
         for stage_num in range(1, max_stage + 1):
             # Only include DNS riders for current stage in progress
@@ -204,6 +208,23 @@ class WebsiteGenerator:
                 target_stage=stage_num,
                 include_dns=include_dns_riders,
             )
+            gc_by_stage_women[stage_num] = calculate_women_gc_standings(
+                group_a_results,
+                group_b_results,
+                stage_num,
+                tour_standings.is_provisional,
+                include_guests=True,
+            )
+
+        # Calculate overall women's GC
+        women_gc = calculate_women_gc_standings(
+            group_a_results,
+            group_b_results,
+            completed_stages,
+            tour_standings.is_provisional,
+            include_guests=True,
+        )
+        women_gc.last_updated = tour_standings.last_updated
 
         # Default to current stage or final stage
         default_stage = (
@@ -215,11 +236,13 @@ class WebsiteGenerator:
         context = {
             "group_a": tour_standings.group_a,
             "group_b": tour_standings.group_b,
+            "women_gc": women_gc,
             "completed_stages": completed_stages,
             "is_provisional": tour_standings.is_provisional,
             "last_updated": tour_standings.last_updated,
             "gc_by_stage_a": gc_by_stage_a,
             "gc_by_stage_b": gc_by_stage_b,
+            "gc_by_stage_women": gc_by_stage_women,
             "max_stage": max_stage,
             "default_stage": default_stage,
             "current_stage": tour_standings.current_stage,
@@ -252,6 +275,8 @@ class WebsiteGenerator:
         Returns:
             Path to generated file
         """
+        from src.processor.handicap import split_results_by_gender
+
         stage = tour_config.get_stage(stage_number)
 
         all_results = group_a_results + group_b_results
@@ -263,6 +288,15 @@ class WebsiteGenerator:
         # Get courses and check for penalty events
         courses = stage.courses if stage else []
         has_penalty_events = any(c.has_penalties for c in courses)
+
+        # Split results by gender for women's sections
+        women_a, _ = split_results_by_gender(group_a_results)
+        women_b, _ = split_results_by_gender(group_b_results)
+        all_women = women_a + women_b
+        # Recalculate positions for combined women's results
+        from src.processor.handicap import _calculate_positions_and_gaps
+
+        all_women = _calculate_positions_and_gaps(all_women, use_stage_time=True)
 
         context = {
             "stage_number": stage_number,
@@ -276,6 +310,7 @@ class WebsiteGenerator:
             "has_penalty_events": has_penalty_events,
             "group_a_results": group_a_results,
             "group_b_results": group_b_results,
+            "women_results": all_women,
             "uncategorized_results": uncategorized_results or [],
             "is_provisional": is_provisional,
             "last_updated": last_updated,
