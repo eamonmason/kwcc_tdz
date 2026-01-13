@@ -43,7 +43,8 @@ def calculate_gc_standings(
             continue
 
         for result in results:
-            if result.race_group != race_group:
+            # Skip race_group filter for Women's GC (women can be in A or B groups)
+            if race_group != "Women" and result.race_group != race_group:
                 continue
 
             # Exclude uncategorized riders from GC standings
