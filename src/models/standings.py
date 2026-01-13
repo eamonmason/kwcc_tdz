@@ -16,7 +16,7 @@ class GCStanding(BaseModel):
     stages_completed: int = Field(..., ge=0, le=6)
     stage_times: dict[int, int] = Field(
         default_factory=dict,
-        description="Stage number -> adjusted time in seconds",
+        description="Stage number -> stage time (raw + penalty) in seconds",
     )
     position: int = Field(default=0, ge=0)  # Set after sorting
     gap_to_leader: int = Field(default=0, ge=0)

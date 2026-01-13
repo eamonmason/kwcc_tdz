@@ -84,15 +84,18 @@ def calculate_gc_standings(
                     and target_stage not in completed
                 ):
                     # DNS for target stage - include at bottom
-                    total_time = sum(
-                        stage_results[s].adjusted_time_seconds
+                    # Sum stage_time_seconds (raw + penalty), add handicap ONCE
+                    total_stage_time = sum(
+                        stage_results[s].stage_time_seconds
                         for s in prior_stages
                         if s in stage_results
                     )
+                    handicap_seconds = first_result.handicap_seconds
+                    total_time = total_stage_time + handicap_seconds
 
-                    # Build stage times dict
+                    # Build stage times dict (store stage_time, not adjusted_time)
                     stage_times = {
-                        stage: result.adjusted_time_seconds
+                        stage: result.stage_time_seconds
                         for stage, result in stage_results.items()
                     }
 
@@ -114,16 +117,21 @@ def calculate_gc_standings(
             continue
 
         # Calculate total time from completed stages
-        total_time = sum(
-            stage_results[s].adjusted_time_seconds
+        # IMPORTANT: Sum stage_time_seconds (raw + penalty), NOT adjusted_time_seconds
+        # Handicap is applied ONCE to the GC total, not per-stage
+        total_stage_time = sum(
+            stage_results[s].stage_time_seconds
             for s in required_stages
             if s in stage_results
         )
 
-        # Build stage times dict
+        # Add handicap ONCE to the total GC time
+        handicap_seconds = first_result.handicap_seconds
+        total_time = total_stage_time + handicap_seconds
+
+        # Build stage times dict (store stage_time, not adjusted_time)
         stage_times = {
-            stage: result.adjusted_time_seconds
-            for stage, result in stage_results.items()
+            stage: result.stage_time_seconds for stage, result in stage_results.items()
         }
 
         standing = GCStanding(
