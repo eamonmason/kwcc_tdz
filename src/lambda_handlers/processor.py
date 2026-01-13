@@ -13,6 +13,7 @@ from src.config import get_tour_config
 from src.generator import WebsiteGenerator
 from src.models import StageResult
 from src.processor import build_tour_standings
+from src.processor.handicap import _calculate_positions_and_gaps
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -128,6 +129,8 @@ def load_all_results_from_s3(
         manual_a = load_manual_results_from_s3(bucket, stage, "A")
         if manual_a:
             a_results = merge_results(a_results, manual_a)
+            # Recalculate positions after merging manual results
+            a_results = _calculate_positions_and_gaps(a_results, use_stage_time=True)
 
         if a_results:
             group_a_results[stage] = a_results
@@ -137,6 +140,8 @@ def load_all_results_from_s3(
         manual_b = load_manual_results_from_s3(bucket, stage, "B")
         if manual_b:
             b_results = merge_results(b_results, manual_b)
+            # Recalculate positions after merging manual results
+            b_results = _calculate_positions_and_gaps(b_results, use_stage_time=True)
 
         if b_results:
             group_b_results[stage] = b_results
@@ -148,6 +153,10 @@ def load_all_results_from_s3(
         manual_uncat = load_manual_results_from_s3(bucket, stage, "uncategorized")
         if manual_uncat:
             uncat_results = merge_results(uncat_results, manual_uncat)
+            # Recalculate positions after merging manual results
+            uncat_results = _calculate_positions_and_gaps(
+                uncat_results, use_stage_time=True
+            )
 
         if uncat_results:
             uncategorized_results[stage] = uncat_results
