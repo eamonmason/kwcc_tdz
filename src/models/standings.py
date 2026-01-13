@@ -18,6 +18,10 @@ class GCStanding(BaseModel):
         default_factory=dict,
         description="Stage number -> stage time (raw + penalty) in seconds",
     )
+    stage_event_ids: dict[int, str] = Field(
+        default_factory=dict,
+        description="Stage number -> ZwiftPower event ID",
+    )
     position: int = Field(default=0, ge=0)  # Set after sorting
     gap_to_leader: int = Field(default=0, ge=0)
     is_provisional: bool = Field(default=True)

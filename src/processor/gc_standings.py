@@ -99,6 +99,13 @@ def calculate_gc_standings(
                         for stage, result in stage_results.items()
                     }
 
+                    # Build stage event IDs dict for ZwiftPower links
+                    stage_event_ids = {
+                        stage: result.event_id
+                        for stage, result in stage_results.items()
+                        if result.event_id
+                    }
+
                     standing = GCStanding(
                         rider_name=first_result.rider_name,
                         rider_id=rider_id,
@@ -107,6 +114,7 @@ def calculate_gc_standings(
                         total_adjusted_time_seconds=total_time,
                         stages_completed=len(stage_results),
                         stage_times=stage_times,
+                        stage_event_ids=stage_event_ids,
                         position=0,  # Will be set after sorting
                         gap_to_leader=0,  # Will be set after sorting
                         is_provisional=is_provisional,
@@ -134,6 +142,13 @@ def calculate_gc_standings(
             stage: result.stage_time_seconds for stage, result in stage_results.items()
         }
 
+        # Build stage event IDs dict for ZwiftPower links
+        stage_event_ids = {
+            stage: result.event_id
+            for stage, result in stage_results.items()
+            if result.event_id
+        }
+
         standing = GCStanding(
             rider_name=first_result.rider_name,
             rider_id=rider_id,
@@ -142,6 +157,7 @@ def calculate_gc_standings(
             total_adjusted_time_seconds=total_time,
             stages_completed=len(stage_results),
             stage_times=stage_times,
+            stage_event_ids=stage_event_ids,
             position=0,  # Will be set after sorting
             gap_to_leader=0,  # Will be set after sorting
             is_provisional=is_provisional,

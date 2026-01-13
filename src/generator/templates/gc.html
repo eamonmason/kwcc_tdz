@@ -74,6 +74,30 @@
     .gc-standings-container.active {
         display: block;
     }
+
+    .position-change {
+        font-size: 0.75em;
+        margin-left: 0.3rem;
+        font-weight: normal;
+    }
+
+    .position-up {
+        color: #28a745;
+    }
+
+    .position-down {
+        color: #dc3545;
+    }
+
+    .stage-time a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .stage-time a:hover {
+        text-decoration: underline;
+        color: #007bff;
+    }
 </style>
 {% endblock %}
 
@@ -128,7 +152,9 @@
                     <tbody>
                         {% for standing in stage_gc_a.standings %}
                         <tr class="{% if standing.position <= 3 and not standing.is_dns %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}{% if standing.is_dns %} dns-row{% endif %}"
-                            data-guest="{{ 'true' if standing.guest else 'false' }}">
+                            data-guest="{{ 'true' if standing.guest else 'false' }}"
+                            data-rider-id="{{ standing.rider_id }}"
+                            data-position="{{ standing.position }}">
                             <td class="position">
                                 {% if standing.is_dns %}
                                 DNS
@@ -152,7 +178,7 @@
                             <td class="time total-time">{{ standing.total_time_display if not standing.is_dns else '-' }}</td>
                             <td class="gap">{{ standing.gap_display if not standing.is_dns else '-' }}</td>
                             {% for s in range(1, 7) %}
-                            <td class="stage-time">{{ standing.get_stage_time_display(s) }}</td>
+                            <td class="stage-time">{% set event_id = standing.stage_event_ids.get(s, '') %}{% if event_id %}<a href="https://zwiftpower.com/events.php?zid={{ event_id }}" target="_blank" title="View on ZwiftPower">{{ standing.get_stage_time_display(s) }}</a>{% else %}{{ standing.get_stage_time_display(s) }}{% endif %}</td>
                             {% endfor %}
                         </tr>
                         {% endfor %}
@@ -191,7 +217,9 @@
                     <tbody>
                         {% for standing in stage_gc_b.standings %}
                         <tr class="{% if standing.position <= 3 and not standing.is_dns %}top-three{% endif %}{% if standing.guest %} guest-row{% endif %}{% if standing.is_dns %} dns-row{% endif %}"
-                            data-guest="{{ 'true' if standing.guest else 'false' }}">
+                            data-guest="{{ 'true' if standing.guest else 'false' }}"
+                            data-rider-id="{{ standing.rider_id }}"
+                            data-position="{{ standing.position }}">
                             <td class="position">
                                 {% if standing.is_dns %}
                                 DNS
@@ -215,7 +243,7 @@
                             <td class="time total-time">{{ standing.total_time_display if not standing.is_dns else '-' }}</td>
                             <td class="gap">{{ standing.gap_display if not standing.is_dns else '-' }}</td>
                             {% for s in range(1, 7) %}
-                            <td class="stage-time">{{ standing.get_stage_time_display(s) }}</td>
+                            <td class="stage-time">{% set event_id = standing.stage_event_ids.get(s, '') %}{% if event_id %}<a href="https://zwiftpower.com/events.php?zid={{ event_id }}" target="_blank" title="View on ZwiftPower">{{ standing.get_stage_time_display(s) }}</a>{% else %}{{ standing.get_stage_time_display(s) }}{% endif %}</td>
                             {% endfor %}
                         </tr>
                         {% endfor %}
@@ -317,6 +345,75 @@
 
     if (!stageSelect) return;
 
+    // Build position maps for each stage (rider_id -> position)
+    function buildPositionMaps() {
+        const maps = {};
+        document.querySelectorAll('.gc-standings-container').forEach(container => {
+            const stageNum = parseInt(container.dataset.stage);
+            maps[stageNum] = {};
+
+            // Get all rows with rider-id in this stage container (excluding Women's GC)
+            container.querySelectorAll('.gc-table:not(.women-gc-table) tr[data-rider-id]').forEach(row => {
+                const riderId = row.dataset.riderId;
+                const position = parseInt(row.dataset.position);
+                if (riderId && !isNaN(position) && position > 0) {
+                    maps[stageNum][riderId] = position;
+                }
+            });
+        });
+        return maps;
+    }
+
+    const positionMaps = buildPositionMaps();
+
+    // Update position change indicators for visible stage
+    function updatePositionChanges(stageNum) {
+        const currentContainer = document.getElementById(`gc-stage-${stageNum}`);
+        if (!currentContainer) return;
+
+        // Get position maps for current and previous stage
+        const currentPositions = positionMaps[stageNum] || {};
+        const prevPositions = stageNum > 1 ? (positionMaps[stageNum - 1] || {}) : {};
+
+        // Update each row's position cell (excluding Women's GC)
+        currentContainer.querySelectorAll('.gc-table:not(.women-gc-table) tr[data-rider-id]').forEach(row => {
+            const riderId = row.dataset.riderId;
+            const posCell = row.querySelector('.position');
+            if (!posCell || row.classList.contains('dns-row')) return;
+
+            // Remove any existing position change indicator
+            const existingChange = posCell.querySelector('.position-change');
+            if (existingChange) existingChange.remove();
+
+            // Only show changes for Stage 2 onwards
+            if (stageNum <= 1) return;
+
+            const currentPos = currentPositions[riderId];
+            const prevPos = prevPositions[riderId];
+
+            // Only show if rider was in previous stage
+            if (!prevPos || !currentPos) return;
+
+            const change = prevPos - currentPos;
+            if (change === 0) return; // No change
+
+            const changeSpan = document.createElement('span');
+            changeSpan.className = 'position-change';
+
+            if (change > 0) {
+                changeSpan.classList.add('position-up');
+                changeSpan.innerHTML = `(&#8593;${change})`;
+                changeSpan.title = `Up ${change} from Stage ${stageNum - 1}`;
+            } else {
+                changeSpan.classList.add('position-down');
+                changeSpan.innerHTML = `(&#8595;${Math.abs(change)})`;
+                changeSpan.title = `Down ${Math.abs(change)} from Stage ${stageNum - 1}`;
+            }
+
+            posCell.appendChild(changeSpan);
+        });
+    }
+
     // Show the selected stage's GC
     function showStageGC(stageNum) {
         // Hide all stage containers
@@ -329,6 +426,9 @@
         if (selectedContainer) {
             selectedContainer.classList.add('active');
         }
+
+        // Update position change indicators
+        updatePositionChanges(stageNum);
 
         // Update subtitle text
         updateSubtitle(stageNum);
