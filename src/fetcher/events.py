@@ -445,8 +445,34 @@ def get_event_details(
     soup = client.get_html("/events.php", params={"zid": event_id})
 
     # Parse event header info
+    # Try multiple methods to find the event title
+    title = None
+
+    # Method 1: Look for h2 tag
     title_elem = soup.find("h2")
-    title = title_elem.get_text(strip=True) if title_elem else f"Event {event_id}"
+    if title_elem:
+        title = title_elem.get_text(strip=True)
+
+    # Method 2: Parse from page title tag (format: "ZwiftPower - Event Name")
+    if not title or title.startswith("Event "):
+        page_title = soup.find("title")
+        if page_title:
+            page_title_text = page_title.get_text(strip=True)
+            # Remove "ZwiftPower" prefix if present
+            # Format can be: "ZwiftPower - Event Name" or "ZwiftPower -  Event Name" (extra space)
+            if page_title_text.lower().startswith("zwiftpower"):
+                # Remove "ZwiftPower" and any following " - " or " -  "
+                title_without_prefix = page_title_text[len("zwiftpower") :].strip()
+                if title_without_prefix.startswith("-"):
+                    title_without_prefix = title_without_prefix[1:].strip()
+                if title_without_prefix and not title_without_prefix.lower().startswith(
+                    "login"
+                ):
+                    title = title_without_prefix
+
+    # Fallback to generic title
+    if not title:
+        title = f"Event {event_id}"
 
     # Look for route and distance info
     route = ""
