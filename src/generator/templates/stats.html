@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+
+{% block title %}Participation Stats | KWCC Tour de Zwift 2026{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+    .stats-header {
+        margin-bottom: 2rem;
+    }
+
+    .stats-header h2 {
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-subtitle {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 2rem;
+        background: #fff;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .stage-filter {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .stage-filter label {
+        font-weight: 600;
+        margin-right: 0.5rem;
+    }
+
+    .stage-filter select {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+    }
+
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+
+    .time-breakdown {
+        margin-top: 2rem;
+    }
+
+    .time-breakdown h3 {
+        margin-bottom: 1rem;
+    }
+
+    .time-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .time-table th,
+    .time-table td {
+        padding: 0.75rem 1rem;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+    }
+
+    .time-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .time-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .time-table .day-header {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .event-cell {
+        font-size: 0.85rem;
+    }
+
+    .event-count {
+        font-weight: bold;
+    }
+
+    .event-stage {
+        font-size: 0.75rem;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-header">
+    <h2>Participation Statistics</h2>
+    <p class="stats-subtitle">Event participation breakdown by day and time slot</p>
+</div>
+
+<div class="summary-stats">
+    <div class="stat-card">
+        <div class="stat-value" id="total-participants">{{ total_participants }}</div>
+        <div class="stat-label">Total Participations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="unique-riders">{{ unique_riders }}</div>
+        <div class="stat-label">Unique Riders</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="total-events">{{ total_events }}</div>
+        <div class="stat-label">Events Used</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="stages-completed">{{ stages_with_data }}</div>
+        <div class="stat-label">Stages with Results</div>
+    </div>
+</div>
+
+<div class="stage-filter">
+    <label for="stage-select">Filter by Stage:</label>
+    <select id="stage-select">
+        <option value="all" selected>All Stages</option>
+        {% for stage_num in range(1, 7) %}
+        <option value="{{ stage_num }}">Stage {{ stage_num }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div class="chart-container">
+    <canvas id="participationChart"></canvas>
+</div>
+
+<div class="time-breakdown">
+    <h3>Participation by Day and Time</h3>
+    <table class="time-table" id="time-table">
+        <thead>
+            <tr class="day-header">
+                <th>Time (UTC)</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+                <th>Sun</th>
+            </tr>
+        </thead>
+        <tbody id="time-table-body">
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Event data passed from server
+const eventData = {{ event_data | tojson }};
+
+// Stage colors for the chart
+const stageColors = {
+    1: { bg: 'rgba(255, 99, 132, 0.8)', border: 'rgb(255, 99, 132)' },
+    2: { bg: 'rgba(54, 162, 235, 0.8)', border: 'rgb(54, 162, 235)' },
+    3: { bg: 'rgba(255, 206, 86, 0.8)', border: 'rgb(255, 206, 86)' },
+    4: { bg: 'rgba(75, 192, 192, 0.8)', border: 'rgb(75, 192, 192)' },
+    5: { bg: 'rgba(153, 102, 255, 0.8)', border: 'rgb(153, 102, 255)' },
+    6: { bg: 'rgba(255, 159, 64, 0.8)', border: 'rgb(255, 159, 64)' }
+};
+
+const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const dayOrder = { 'Mon': 0, 'Tue': 1, 'Wed': 2, 'Thu': 3, 'Fri': 4, 'Sat': 5, 'Sun': 6 };
+
+let chart = null;
+
+// Build chart data from event data
+function buildChartData(stageFilter) {
+    // Group by day and time slot
+    const dayTimeSlots = {};
+    const timeSlots = new Set();
+
+    for (const event of eventData) {
+        if (stageFilter !== 'all' && event.stage !== parseInt(stageFilter)) {
+            continue;
+        }
+
+        const day = event.day;
+        const timeSlot = event.time_slot;
+        timeSlots.add(timeSlot);
+
+        if (!dayTimeSlots[day]) {
+            dayTimeSlots[day] = {};
+        }
+        if (!dayTimeSlots[day][timeSlot]) {
+            dayTimeSlots[day][timeSlot] = [];
+        }
+        dayTimeSlots[day][timeSlot].push(event);
+    }
+
+    // Sort time slots
+    const sortedTimeSlots = Array.from(timeSlots).sort();
+
+    // Build labels (time slots)
+    const labels = sortedTimeSlots;
+
+    // Build datasets (one per day, stacked by stage events within each day-time)
+    const datasets = [];
+
+    // For stacked bar chart, we need: for each time slot, show participation broken down by stage
+    // Group by stage for each day-time combination
+    for (let stage = 1; stage <= 6; stage++) {
+        const stageData = [];
+        for (const timeSlot of sortedTimeSlots) {
+            let total = 0;
+            for (const day of dayNames) {
+                if (dayTimeSlots[day] && dayTimeSlots[day][timeSlot]) {
+                    const stageEvents = dayTimeSlots[day][timeSlot].filter(e => e.stage === stage);
+                    for (const event of stageEvents) {
+                        total += event.count;
+                    }
+                }
+            }
+            stageData.push(total);
+        }
+
+        // Only add dataset if it has data
+        if (stageData.some(v => v > 0)) {
+            datasets.push({
+                label: `Stage ${stage}`,
+                data: stageData,
+                backgroundColor: stageColors[stage].bg,
+                borderColor: stageColors[stage].border,
+                borderWidth: 1
+            });
+        }
+    }
+
+    return { labels, datasets, dayTimeSlots, sortedTimeSlots };
+}
+
+// Create or update chart
+function updateChart(stageFilter) {
+    const { labels, datasets } = buildChartData(stageFilter);
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    const ctx = document.getElementById('participationChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Time Slot (UTC)'
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Riders'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: stageFilter === 'all' ? 'Participation by Time Slot (All Stages)' : `Stage ${stageFilter} Participation by Time Slot`
+                },
+                tooltip: {
+                    callbacks: {
+                        afterTitle: function(context) {
+                            return `${context[0].dataset.label}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update the time breakdown table
+function updateTimeTable(stageFilter) {
+    const { dayTimeSlots, sortedTimeSlots } = buildChartData(stageFilter);
+    const tbody = document.getElementById('time-table-body');
+    tbody.innerHTML = '';
+
+    for (const timeSlot of sortedTimeSlots) {
+        const row = document.createElement('tr');
+
+        // Time slot cell
+        const timeCell = document.createElement('td');
+        timeCell.textContent = timeSlot;
+        timeCell.style.fontWeight = 'bold';
+        row.appendChild(timeCell);
+
+        // Day cells
+        for (const day of dayNames) {
+            const cell = document.createElement('td');
+            cell.className = 'event-cell';
+
+            if (dayTimeSlots[day] && dayTimeSlots[day][timeSlot]) {
+                const events = dayTimeSlots[day][timeSlot];
+                // Filter by stage if needed
+                const filteredEvents = stageFilter === 'all'
+                    ? events
+                    : events.filter(e => e.stage === parseInt(stageFilter));
+
+                if (filteredEvents.length > 0) {
+                    // Group by stage
+                    const byStage = {};
+                    for (const event of filteredEvents) {
+                        if (!byStage[event.stage]) {
+                            byStage[event.stage] = 0;
+                        }
+                        byStage[event.stage] += event.count;
+                    }
+
+                    const lines = [];
+                    for (const [stage, count] of Object.entries(byStage).sort((a, b) => a[0] - b[0])) {
+                        lines.push(`<span class="event-count">${count}</span> <span class="event-stage">(S${stage})</span>`);
+                    }
+                    cell.innerHTML = lines.join('<br>');
+                } else {
+                    cell.textContent = '-';
+                    cell.style.color = '#ccc';
+                }
+            } else {
+                cell.textContent = '-';
+                cell.style.color = '#ccc';
+            }
+
+            row.appendChild(cell);
+        }
+
+        tbody.appendChild(row);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateChart('all');
+    updateTimeTable('all');
+
+    // Handle stage filter changes
+    document.getElementById('stage-select').addEventListener('change', function() {
+        const stageFilter = this.value;
+        updateChart(stageFilter);
+        updateTimeTable(stageFilter);
+    });
+});
+</script>
+{% endblock %}

@@ -255,6 +255,91 @@ class WebsiteGenerator:
         content = self._render_template("gc.html", context)
         return self._write_html("gc.html", content)
 
+    def generate_stats_page(
+        self,
+        stage_results: dict[
+            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+        ],
+        last_updated: str | None = None,
+    ) -> Path:
+        """
+        Generate stats.html (participation statistics page).
+
+        Args:
+            stage_results: Dict mapping stage number to (group_a, group_b, uncategorized) results
+            last_updated: Last update timestamp
+
+        Returns:
+            Path to generated file
+        """
+        from collections import defaultdict
+
+        # Extract event data from all results
+        event_data = []
+        event_ids_seen = set()
+        all_rider_ids = set()
+
+        day_map = {
+            0: "Mon",
+            1: "Tue",
+            2: "Wed",
+            3: "Thu",
+            4: "Fri",
+            5: "Sat",
+            6: "Sun",
+        }
+
+        for stage_num, (group_a, group_b, uncategorized) in stage_results.items():
+            all_results = group_a + group_b + uncategorized
+
+            # Group results by event_id
+            by_event: dict[str, list[StageResult]] = defaultdict(list)
+            for result in all_results:
+                if result.event_id and result.timestamp:
+                    by_event[result.event_id].append(result)
+                    all_rider_ids.add(result.rider_id)
+
+            # Build event data
+            for event_id, results in by_event.items():
+                if event_id in event_ids_seen:
+                    continue
+                event_ids_seen.add(event_id)
+
+                # Get timestamp from first result
+                first = results[0]
+                if first.timestamp:
+                    day = day_map[first.timestamp.weekday()]
+                    hour = first.timestamp.hour
+                    time_slot = f"{hour:02d}:00"
+
+                    event_data.append(
+                        {
+                            "event_id": event_id,
+                            "stage": stage_num,
+                            "day": day,
+                            "time_slot": time_slot,
+                            "count": len(results),
+                        }
+                    )
+
+        # Calculate summary stats
+        total_participants = sum(e["count"] for e in event_data)
+        unique_riders = len(all_rider_ids)
+        total_events = len(event_ids_seen)
+        stages_with_data = len(stage_results)
+
+        context = {
+            "event_data": event_data,
+            "total_participants": total_participants,
+            "unique_riders": unique_riders,
+            "total_events": total_events,
+            "stages_with_data": stages_with_data,
+            "last_updated": last_updated,
+        }
+
+        content = self._render_template("stats.html", context)
+        return self._write_html("stats.html", content)
+
     def generate_stage_page(
         self,
         stage_number: int,
@@ -374,6 +459,11 @@ class WebsiteGenerator:
         # Generate GC page
         generated_files.append(
             self.generate_gc_page(tour_standings, tour_config, stage_results)
+        )
+
+        # Generate stats page
+        generated_files.append(
+            self.generate_stats_page(stage_results, tour_standings.last_updated)
         )
 
         # Generate stage pages
