@@ -11,6 +11,7 @@ A Python-based web application to track KWCC cycling club's internal Tour de Zwi
 - **Time Penalties**: Configurable penalties for late-starting events
 - **Best Result Selection**: Uses fastest raw time when riders have multiple attempts
 - **GC Calculations**: Computes stage results and GC (General Classification) standings
+- **Women's GC**: Separate overall classification combining women riders from Groups A and B
 - **Static Website**: Generates and hosts results on AWS S3 with CloudFront CDN
 - **Automated Updates**: Cron-based hourly updates at :05 past each hour
 - **Multi-Year Support**: Handles multiple tour years (e.g., TdZ 2026, TdZ 2027)
@@ -74,6 +75,21 @@ Stages can have configurable time penalties for events starting at specific time
 - Riders must complete ALL stages to appear in GC standings
 - Stage results show all riders who completed that stage
 - GC standings only show riders with 100% stage completion
+
+## Women's GC
+
+The system calculates a separate Women's General Classification alongside the standard Group A and Group B standings:
+
+- **Combined Groups**: Women riders from both Group A and Group B compete together in Women's GC
+- **Filtering**: Results are filtered by gender (`gender == "F"` in rider data)
+- **Same Rules**: Women's GC follows the same completion rules as standard GC (must complete all stages)
+- **Display**:
+  - Top 10 shown on home page with link to full standings
+  - Complete Women's GC standings shown on GC page for each stage
+  - Includes guest rider filtering
+- **Handicaps**: Women riders maintain their original handicap groups (A1, A2, B3, etc.)
+
+This allows women riders to compete within their own classification while still participating in their assigned group standings.
 
 ## System Architecture
 

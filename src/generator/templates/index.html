@@ -21,6 +21,20 @@
     .rider-avatar.loading-error {
         display: none;
     }
+
+    .position-change {
+        font-size: 0.75em;
+        margin-left: 0.3rem;
+        font-weight: normal;
+    }
+
+    .position-up {
+        color: #28a745;
+    }
+
+    .position-down {
+        color: #dc3545;
+    }
 </style>
 {% endblock %}
 
@@ -84,7 +98,18 @@
             <tbody>
                 {% for standing in group_a.standings[:10] %}
                 <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
-                    <td class="position">{{ standing.position }}</td>
+                    <td class="position">
+                        {{ standing.position }}
+                        {% if position_changes_a and standing.rider_id in position_changes_a %}
+                            {% set prev_pos = position_changes_a[standing.rider_id] %}
+                            {% set change = prev_pos - standing.position %}
+                            {% if change > 0 %}
+                                <span class="position-change position-up" title="Up {{ change }} from previous stage">(&#8593;{{ change }})</span>
+                            {% elif change < 0 %}
+                                <span class="position-change position-down" title="Down {{ change|abs }} from previous stage">(&#8595;{{ change|abs }})</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
                     <td class="rider-name">
                         <div class="rider-name-with-avatar">
                             <img src="{{ url_prefix }}avatars/{{ standing.rider_id }}.jpg"
@@ -125,7 +150,18 @@
             <tbody>
                 {% for standing in group_b.standings[:10] %}
                 <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
-                    <td class="position">{{ standing.position }}</td>
+                    <td class="position">
+                        {{ standing.position }}
+                        {% if position_changes_b and standing.rider_id in position_changes_b %}
+                            {% set prev_pos = position_changes_b[standing.rider_id] %}
+                            {% set change = prev_pos - standing.position %}
+                            {% if change > 0 %}
+                                <span class="position-change position-up" title="Up {{ change }} from previous stage">(&#8593;{{ change }})</span>
+                            {% elif change < 0 %}
+                                <span class="position-change position-down" title="Down {{ change|abs }} from previous stage">(&#8595;{{ change|abs }})</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
                     <td class="rider-name">
                         <div class="rider-name-with-avatar">
                             <img src="{{ url_prefix }}avatars/{{ standing.rider_id }}.jpg"
@@ -166,7 +202,18 @@
             <tbody>
                 {% for standing in women_gc.standings[:10] %}
                 <tr class="{% if standing.position <= 3 %}top-three{% endif %}">
-                    <td class="position">{{ standing.position }}</td>
+                    <td class="position">
+                        {{ standing.position }}
+                        {% if position_changes_women and standing.rider_id in position_changes_women %}
+                            {% set prev_pos = position_changes_women[standing.rider_id] %}
+                            {% set change = prev_pos - standing.position %}
+                            {% if change > 0 %}
+                                <span class="position-change position-up" title="Up {{ change }} from previous stage">(&#8593;{{ change }})</span>
+                            {% elif change < 0 %}
+                                <span class="position-change position-down" title="Down {{ change|abs }} from previous stage">(&#8595;{{ change|abs }})</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
                     <td class="rider-name">
                         <div class="rider-name-with-avatar">
                             <img src="{{ url_prefix }}avatars/{{ standing.rider_id }}.jpg"

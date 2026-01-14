@@ -114,6 +114,10 @@ class WebsiteGenerator:
         tour_standings: TourStandings,
         tour_config: TourConfig,
         women_gc=None,
+        stage_results: dict[
+            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+        ]
+        | None = None,
     ) -> Path:
         """
         Generate index.html (homepage).
@@ -122,6 +126,7 @@ class WebsiteGenerator:
             tour_standings: Current tour standings
             tour_config: Tour configuration
             women_gc: Women's GC standings (optional)
+            stage_results: Stage results for position change calculation (optional)
 
         Returns:
             Path to generated file
@@ -129,6 +134,63 @@ class WebsiteGenerator:
         # Get the next upcoming stage if any
         upcoming = tour_config.upcoming_stages
         next_stage = upcoming[0] if upcoming else None
+
+        # Calculate position changes from previous stage (if stage > 1)
+        position_changes_a = {}
+        position_changes_b = {}
+        position_changes_women = {}
+
+        if stage_results and tour_standings.current_stage > 1:
+            from src.processor.gc_standings import (
+                calculate_gc_standings,
+                calculate_women_gc_standings,
+            )
+
+            # Build stage results dicts for previous stage GC calculation
+            group_a_results: dict[int, list[StageResult]] = {}
+            group_b_results: dict[int, list[StageResult]] = {}
+
+            for stage_num, (group_a, group_b, _) in stage_results.items():
+                group_a_results[stage_num] = group_a
+                group_b_results[stage_num] = group_b
+
+            # Calculate GC for previous stage (current_stage - 1)
+            prev_stage = tour_standings.current_stage - 1
+            completed_stages = tour_standings.group_a.completed_stages
+
+            prev_gc_a = calculate_gc_standings(
+                group_a_results,
+                "A",
+                completed_stages,
+                tour_standings.is_provisional,
+                include_guests=True,
+                target_stage=prev_stage,
+                include_dns=False,
+            )
+            prev_gc_b = calculate_gc_standings(
+                group_b_results,
+                "B",
+                completed_stages,
+                tour_standings.is_provisional,
+                include_guests=True,
+                target_stage=prev_stage,
+                include_dns=False,
+            )
+            prev_gc_women = calculate_women_gc_standings(
+                group_a_results,
+                group_b_results,
+                prev_stage,
+                tour_standings.is_provisional,
+                include_guests=True,
+            )
+
+            # Build position maps (rider_id -> position)
+            for standing in prev_gc_a.standings:
+                position_changes_a[standing.rider_id] = standing.position
+            for standing in prev_gc_b.standings:
+                position_changes_b[standing.rider_id] = standing.position
+            for standing in prev_gc_women.standings:
+                position_changes_women[standing.rider_id] = standing.position
 
         context = {
             "group_a": tour_standings.group_a,
@@ -140,6 +202,9 @@ class WebsiteGenerator:
             "is_stage_in_progress": tour_standings.is_stage_in_progress,
             "next_stage": next_stage,
             "last_updated": tour_standings.last_updated,
+            "position_changes_a": position_changes_a,
+            "position_changes_b": position_changes_b,
+            "position_changes_women": position_changes_women,
         }
 
         content = self._render_template("index.html", context)
@@ -453,7 +518,7 @@ class WebsiteGenerator:
 
         # Generate index page
         generated_files.append(
-            self.generate_index(tour_standings, tour_config, women_gc)
+            self.generate_index(tour_standings, tour_config, women_gc, stage_results)
         )
 
         # Generate GC page

@@ -345,6 +345,9 @@
 
     if (!stageSelect) return;
 
+    // Track current visible stage so guest filter can update position changes
+    window.currentVisibleStage = parseInt(stageSelect.value);
+
     // Build position maps for each stage (rider_id -> position)
     function buildPositionMaps() {
         const maps = {};
@@ -414,6 +417,9 @@
         });
     }
 
+    // Expose updatePositionChanges globally so guest filter can use it
+    window.updateGCPositionChanges = updatePositionChanges;
+
     // Show the selected stage's GC
     function showStageGC(stageNum) {
         // Hide all stage containers
@@ -426,6 +432,9 @@
         if (selectedContainer) {
             selectedContainer.classList.add('active');
         }
+
+        // Update current visible stage
+        window.currentVisibleStage = stageNum;
 
         // Update position change indicators
         updatePositionChanges(stageNum);
@@ -551,6 +560,11 @@
         tables.forEach(table => {
             recalculatePositions(table, show);
         });
+
+        // Re-apply position change indicators after recalculating positions
+        if (window.updateGCPositionChanges && window.currentVisibleStage) {
+            window.updateGCPositionChanges(window.currentVisibleStage);
+        }
     }
 
     // Apply initial state
