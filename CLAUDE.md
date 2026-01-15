@@ -262,8 +262,18 @@ AWS_PROFILE=personal cdk deploy <StackName> --context environment=ci
 
 - **S3 Buckets**: `kwcc-tdz-2026-data-ci`, `kwcc-tdz-2026-website-ci`
 - **Lambda Functions**: `kwcc-tdz-data-fetcher-ci`, `kwcc-tdz-results-processor-ci`
-- **CloudFront**: Separate distribution with custom domain `ci-tdz.kingstonwheelers.cc`
+- **CloudFront**: Distribution `EZQGVFCIAHH7X` with custom domain `ci-tdz.kingstonwheelers.cc`
 - **No EventBridge schedule**: Invoke Lambda manually for testing
+
+### Initial CI Setup
+
+After deploying CI for the first time, sync config files from prod:
+
+```bash
+AWS_PROFILE=personal aws s3 sync \
+  s3://kwcc-tdz-2026-data-prod/config/ \
+  s3://kwcc-tdz-2026-data-ci/config/
+```
 
 ### Manual CI Lambda Invocation
 

@@ -80,6 +80,7 @@ class ComputeStack(Stack):
         )
 
         # Results Processor Lambda (defined first so we can reference it)
+        # Include both src/ and static/ directories for website generation
         self.results_processor = lambda_.Function(
             self,
             "ResultsProcessorLambda",
@@ -87,7 +88,17 @@ class ComputeStack(Stack):
             runtime=lambda_.Runtime.PYTHON_3_12,
             architecture=lambda_.Architecture.X86_64,
             handler="src.lambda_handlers.processor.handler",
-            code=lambda_.Code.from_asset("../src"),
+            code=lambda_.Code.from_asset(
+                "../",
+                bundling={
+                    "image": lambda_.Runtime.PYTHON_3_12.bundling_image,
+                    "command": [
+                        "bash",
+                        "-c",
+                        "cp -r src static /asset-output/",
+                    ],
+                },
+            ),
             layers=[dependencies_layer],
             timeout=Duration.minutes(2),
             memory_size=256,
