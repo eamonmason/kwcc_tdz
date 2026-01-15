@@ -49,9 +49,10 @@ class GitHubActionsStack(Stack):
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
                     },
                     "StringLike": {
-                        # Allow main branch and pull requests
+                        # Allow main branch, develop branch, and pull requests
                         "token.actions.githubusercontent.com:sub": [
                             f"repo:{github_org}/{github_repo}:ref:refs/heads/main",
+                            f"repo:{github_org}/{github_repo}:ref:refs/heads/develop",
                             f"repo:{github_org}/{github_repo}:pull_request",
                         ],
                     },

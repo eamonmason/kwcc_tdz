@@ -34,6 +34,7 @@ class DataStack(Stack):
         environment: str = "prod",
         domain_name: str | None = None,
         certificate_arn: str | None = None,
+        existing_secret_arn: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -68,17 +69,27 @@ class DataStack(Stack):
         )
 
         # Secrets Manager for ZwiftPower credentials
-        self.zwiftpower_secret = secretsmanager.Secret(
-            self,
-            "ZwiftPowerSecret",
-            secret_name=f"kwcc-tdz/zwiftpower-credentials-{environment}",
-            description="ZwiftPower credentials for KWCC TdZ results fetcher",
-            generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template='{"username": ""}',
-                generate_string_key="password",
-                exclude_punctuation=True,
-            ),
-        )
+        # Either reference an existing secret (for CI sharing prod credentials)
+        # or create a new one
+        if existing_secret_arn:
+            # Use partial ARN (without random suffix) to reference existing secret
+            self.zwiftpower_secret = secretsmanager.Secret.from_secret_partial_arn(
+                self,
+                "ZwiftPowerSecret",
+                secret_partial_arn=existing_secret_arn,
+            )
+        else:
+            self.zwiftpower_secret = secretsmanager.Secret(
+                self,
+                "ZwiftPowerSecret",
+                secret_name=f"kwcc-tdz/zwiftpower-credentials-{environment}",
+                description="ZwiftPower credentials for KWCC TdZ results fetcher",
+                generate_secret_string=secretsmanager.SecretStringGenerator(
+                    secret_string_template='{"username": ""}',
+                    generate_string_key="password",
+                    exclude_punctuation=True,
+                ),
+            )
 
         # CloudFront distribution for website
         # Using S3BucketOrigin with OAC (Origin Access Control)

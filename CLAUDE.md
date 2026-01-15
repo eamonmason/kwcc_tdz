@@ -212,13 +212,79 @@ Hooks run automatically on commit (lint/format) and push (pytest):
 - pytest unit tests (on push only)
 - Large file check, YAML validation, trailing whitespace
 
+## Local Development
+
+Local scripts exist for development and testing without AWS:
+
+```bash
+# 1. Create .env with ZwiftPower credentials
+cp .env.example .env
+# Edit .env with your ZWIFTPOWER_USERNAME and ZWIFTPOWER_PASSWORD
+
+# 2. Configure event IDs (one-time setup)
+uv run python scripts/fetch_zwiftpower.py --show-config
+uv run python scripts/fetch_zwiftpower.py --add-event 1 <EVENT_ID>
+
+# 3. Fetch results from ZwiftPower (caches locally)
+uv run python scripts/fetch_zwiftpower.py --stages 1 2 3
+
+# 4. Generate and serve website locally
+uv run python scripts/run_local.py
+# Opens browser at http://localhost:8000
+```
+
+Data is cached in `data/cache/` directory. Use `--force` to refresh cached data.
+
+## Environments
+
+The project supports multiple environments via CDK context:
+
+| Environment | Branch | Domain | Schedule | Secrets |
+|-------------|--------|--------|----------|---------|
+| `prod` | `main` | `tdz.kingstonwheelers.cc` | Hourly at :05 | Own secret |
+| `ci` | `develop` | `ci-tdz.kingstonwheelers.cc` | Manual only | Shares prod |
+
+### CDK Commands for Different Environments
+
+```bash
+# Production (default)
+AWS_PROFILE=personal cdk synth --all
+AWS_PROFILE=personal cdk diff
+AWS_PROFILE=personal cdk deploy <StackName>
+
+# CI environment
+AWS_PROFILE=personal cdk synth --all --context environment=ci
+AWS_PROFILE=personal cdk diff --context environment=ci
+AWS_PROFILE=personal cdk deploy <StackName> --context environment=ci
+```
+
+### CI Environment Resources
+
+- **S3 Buckets**: `kwcc-tdz-2026-data-ci`, `kwcc-tdz-2026-website-ci`
+- **Lambda Functions**: `kwcc-tdz-data-fetcher-ci`, `kwcc-tdz-results-processor-ci`
+- **CloudFront**: Separate distribution with custom domain `ci-tdz.kingstonwheelers.cc`
+- **No EventBridge schedule**: Invoke Lambda manually for testing
+
+### Manual CI Lambda Invocation
+
+```bash
+# Invoke CI data fetcher
+AWS_PROFILE=personal aws lambda invoke --region eu-west-1 \
+  --function-name kwcc-tdz-data-fetcher-ci --payload '{}' /tmp/ci-output.json
+
+# Invoke CI processor
+AWS_PROFILE=personal aws lambda invoke --region eu-west-1 \
+  --function-name kwcc-tdz-results-processor-ci --payload '{}' /tmp/ci-output.json
+```
+
 ## GitHub Actions
 
-Workflow runs on push to main:
+Workflow runs on push to `main` or `develop`:
 
-1. **Lint job**: ruff check and format
-2. **Test job**: pytest with coverage
-3. **Deploy job**: CDK deploy (OIDC auth, no secrets needed)
+1. **Lint job**: ruff check and format (all branches)
+2. **Test job**: pytest with coverage (all branches)
+3. **Deploy-prod job**: CDK deploy to production (main branch only)
+4. **Deploy-ci job**: CDK deploy to CI environment (develop branch only)
 
 ## Important Notes
 

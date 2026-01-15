@@ -2,9 +2,9 @@ name: Deploy TDZ Results
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
 env:
@@ -64,8 +64,8 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: false
 
-  deploy:
-    name: Deploy
+  deploy-prod:
+    name: Deploy Production
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -122,3 +122,67 @@ jobs:
           else
             echo "No CloudFront distribution found yet"
           fi
+
+  deploy-ci:
+    name: Deploy CI Environment
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    permissions:
+      id-token: write   # Required for OIDC
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev --extra cdk
+          npm install -g aws-cdk
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          # No secrets needed - uses GitHub's OIDC token
+
+      - name: CDK Synth
+        working-directory: infrastructure
+        run: cdk synth --all --context environment=ci
+
+      - name: CDK Deploy CI
+        working-directory: infrastructure
+        run: |
+          # Deploy certificate stack first (us-east-1, required for CloudFront)
+          cdk deploy KwccTdzCiCertificateStack --require-approval never --context environment=ci
+          # Deploy application stacks (skip GitHubActionsStack - managed separately)
+          cdk deploy KwccTdzCiDataStack KwccTdzCiComputeStack --require-approval never --context environment=ci
+
+      - name: Invalidate CloudFront cache
+        run: |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name KwccTdzCiDataStack \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text 2>/dev/null || echo "")
+
+          if [ -n "$DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $DISTRIBUTION_ID \
+              --paths "/*"
+            echo "CloudFront cache invalidated for distribution: $DISTRIBUTION_ID"
+          else
+            echo "No CloudFront distribution found yet"
+          fi
+
+      - name: Output CI Website URL
+        run: |
+          echo "CI website deployed to: https://ci-tdz.kingstonwheelers.cc"
+          echo "Note: DNS configuration required for first deployment"

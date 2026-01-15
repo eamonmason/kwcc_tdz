@@ -50,6 +50,7 @@ class ComputeStack(Stack):
         website_bucket: s3.IBucket,
         zwiftpower_secret: secretsmanager.ISecret,
         cloudfront_distribution_id: str = "",
+        enable_schedule: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -147,20 +148,22 @@ class ComputeStack(Stack):
 
         # EventBridge rule for hourly execution (cron-based for precise timing)
         # Runs at 5 minutes past every hour to allow events to complete
-        hourly_rule = events.Rule(
-            self,
-            "HourlyFetchRule",
-            rule_name=f"kwcc-tdz-hourly-fetch-{environment}",
-            schedule=events.Schedule.cron(minute="5", hour="*"),
-            description="Fetch ZwiftPower results hourly at :05 past the hour",
-        )
-
-        hourly_rule.add_target(
-            targets.LambdaFunction(
-                self.data_fetcher,
-                retry_attempts=2,
+        # Only enabled for production (CI uses manual invocation)
+        if enable_schedule:
+            hourly_rule = events.Rule(
+                self,
+                "HourlyFetchRule",
+                rule_name=f"kwcc-tdz-hourly-fetch-{environment}",
+                schedule=events.Schedule.cron(minute="5", hour="*"),
+                description="Fetch ZwiftPower results hourly at :05 past the hour",
             )
-        )
+
+            hourly_rule.add_target(
+                targets.LambdaFunction(
+                    self.data_fetcher,
+                    retry_attempts=2,
+                )
+            )
 
         # Outputs
         CfnOutput(
