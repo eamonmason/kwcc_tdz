@@ -271,14 +271,9 @@ def handler(event, context):  # noqa: ARG001
                     )
 
                     # Filter to events matching this stage
-                    # Get route and option letter from primary course
+                    # Get route from primary course
                     stage_route = (
                         current_stage.courses[0].route if current_stage.courses else ""
-                    )
-                    option_letter = (
-                        current_stage.courses[0].option_letter
-                        if current_stage.courses
-                        else None
                     )
                     events_with_ts = find_tdz_race_events_with_timestamps(
                         client,
@@ -286,7 +281,6 @@ def handler(event, context):  # noqa: ARG001
                         stage_route,
                         current_stage.start_datetime.date(),
                         current_stage.end_datetime.date(),
-                        option_letter,
                     )
 
                     if events_with_ts:

@@ -272,7 +272,6 @@ def find_tdz_race_events(
     route_name: str,
     start_date: date,
     end_date: date,
-    option_letter: str | None = None,
 ) -> list[str]:
     """
     Find Tour de Zwift race event IDs for a specific stage.
@@ -283,7 +282,6 @@ def find_tdz_race_events(
         route_name: Expected route name
         start_date: Stage start date
         end_date: Stage end date
-        option_letter: Optional route option letter (A, B, C, D, or E) to filter by
 
     Returns:
         List of event IDs
@@ -292,7 +290,7 @@ def find_tdz_race_events(
         ZwiftPowerEventNotFoundError: If no events found
     """
     events_with_ts = find_tdz_race_events_with_timestamps(
-        client, stage_number, route_name, start_date, end_date, option_letter
+        client, stage_number, route_name, start_date, end_date
     )
     return [eid for eid, _ in events_with_ts]
 
@@ -303,13 +301,13 @@ def find_tdz_race_events_with_timestamps(
     route_name: str,
     start_date: date,
     end_date: date,
-    option_letter: str | None = None,
 ) -> list[tuple[str, datetime | None]]:
     """
     Find Tour de Zwift event IDs for a specific stage with timestamps.
 
-    Fetches ALL event types (both races and rides). Race filtering is handled
-    later by the processor based on stage configuration.
+    Fetches ALL event types (both races and rides) that match the stage.
+    Route option filtering (A/B/C/D/E) is handled by result-level category
+    filtering, not event filtering.
 
     Args:
         client: ZwiftPower client
@@ -317,7 +315,6 @@ def find_tdz_race_events_with_timestamps(
         route_name: Expected route name
         start_date: Stage start date
         end_date: Stage end date
-        option_letter: Optional route option letter (A, B, C, D, or E) to filter by
 
     Returns:
         List of tuples (event_id, event_timestamp)
@@ -325,9 +322,8 @@ def find_tdz_race_events_with_timestamps(
     Raises:
         ZwiftPowerEventNotFoundError: If no events found
     """
-    option_info = f" option {option_letter}" if option_letter else ""
     logger.info(
-        f"Searching for TdZ Stage {stage_number} ({route_name}{option_info}) "
+        f"Searching for TdZ Stage {stage_number} ({route_name}) "
         f"events between {start_date} and {end_date}"
     )
 
@@ -363,18 +359,6 @@ def find_tdz_race_events_with_timestamps(
         # Must match stage number
         if stage_pattern not in event_name:
             continue
-
-        # Filter by option letter if specified
-        # Event names typically have format like "Stage X - Location (C)" or "Stage X (C)"
-        if option_letter:
-            option_pattern = f"({option_letter.lower()})"
-            # Also check for variations like " C " or " option C"
-            if (
-                option_pattern not in event_name
-                and f" {option_letter.lower()} " not in event_name
-            ):
-                # Skip events that don't match the option letter
-                continue
 
         # Score based on various criteria
         if "tour de zwift" in event_name:
@@ -423,15 +407,6 @@ def find_tdz_race_events_with_timestamps(
         # Include any Stage X TdZ events as fallback
         for event in events:
             event_name = event.get("name", "").lower()
-
-            # Apply option letter filter if specified
-            if option_letter:
-                option_pattern = f"({option_letter.lower()})"
-                if (
-                    option_pattern not in event_name
-                    and f" {option_letter.lower()} " not in event_name
-                ):
-                    continue
 
             # Include ALL event types (races and rides), exclude only run events
             if (
