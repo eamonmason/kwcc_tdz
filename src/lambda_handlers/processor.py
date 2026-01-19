@@ -12,6 +12,7 @@ import boto3
 from src.config import get_tour_config
 from src.generator import WebsiteGenerator
 from src.models import StageResult
+from src.models.tour import STAGE_ORDER
 from src.processor import build_tour_standings
 from src.processor.handicap import _calculate_positions_and_gaps
 
@@ -25,7 +26,7 @@ cloudfront_client = boto3.client("cloudfront")
 
 def load_stage_results_from_s3(
     bucket: str,
-    stage: int,
+    stage: str,
     group: str,
     tour_id: str = "tdz-2026",
 ) -> list[StageResult]:
@@ -42,7 +43,7 @@ def load_stage_results_from_s3(
 
 def load_manual_results_from_s3(
     bucket: str,
-    stage: int,
+    stage: str,
     group: str,
 ) -> list[StageResult]:
     """Load manual result overrides from S3.
@@ -53,7 +54,7 @@ def load_manual_results_from_s3(
 
     Args:
         bucket: S3 bucket name
-        stage: Stage number (1-6)
+        stage: Stage number (e.g., '1', '3.1', '3.2')
         group: Race group (A, B, or uncategorized)
 
     Returns:
@@ -108,20 +109,20 @@ def load_all_results_from_s3(
     bucket: str,
     tour_id: str = "tdz-2026",
 ) -> tuple[
-    dict[int, list[StageResult]],
-    dict[int, list[StageResult]],
-    dict[int, list[StageResult]],
+    dict[str, list[StageResult]],
+    dict[str, list[StageResult]],
+    dict[str, list[StageResult]],
 ]:
     """Load all stage results from S3, including manual overrides.
 
     Loads automatic results from ZwiftPower and merges with any manual
     result overrides. Manual results take precedence by rider_id.
     """
-    group_a_results: dict[int, list[StageResult]] = {}
-    group_b_results: dict[int, list[StageResult]] = {}
-    uncategorized_results: dict[int, list[StageResult]] = {}
+    group_a_results: dict[str, list[StageResult]] = {}
+    group_b_results: dict[str, list[StageResult]] = {}
+    uncategorized_results: dict[str, list[StageResult]] = {}
 
-    for stage in range(1, 7):
+    for stage in STAGE_ORDER:
         # Load automatic results from ZwiftPower
         a_results = load_stage_results_from_s3(bucket, stage, "A", tour_id)
 
@@ -264,7 +265,12 @@ def handler(event, context):  # noqa: ARG001
             is_stage_in_progress = True
         else:
             # No stage currently active (between stages or tour complete)
-            current_stage = min(completed_stages, 6) if completed_stages > 0 else 1
+            if completed_stages > 0:
+                current_stage = STAGE_ORDER[
+                    min(completed_stages - 1, len(STAGE_ORDER) - 1)
+                ]
+            else:
+                current_stage = STAGE_ORDER[0]
             is_stage_in_progress = False
 
         # Build tour standings (include guests for client-side filtering)
@@ -287,7 +293,7 @@ def handler(event, context):  # noqa: ARG001
 
             # Prepare stage results for generation
             stage_results = {}
-            for stage in range(1, 7):
+            for stage in STAGE_ORDER:
                 group_a = group_a_results.get(stage, [])
                 group_b = group_b_results.get(stage, [])
                 uncat = uncategorized_results.get(stage, [])

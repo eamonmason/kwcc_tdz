@@ -6,6 +6,7 @@ from pathlib import Path
 
 from src.models.result import StageResult
 from src.models.standings import TourStandings
+from src.models.tour import STAGE_ORDER, TOTAL_STAGES
 from src.processor.gc_standings import build_tour_standings
 
 
@@ -22,13 +23,13 @@ class StageResultsManager:
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-    def _results_file(self, stage: int, group: str) -> Path:
+    def _results_file(self, stage: str, group: str) -> Path:
         """Get path to results file for a stage and group."""
         return self.data_dir / f"stage_{stage}_group_{group}.json"
 
     def save_stage_results(
         self,
-        stage_number: int,
+        stage_number: str,
         group_a_results: list[StageResult],
         group_b_results: list[StageResult],
     ) -> None:
@@ -62,14 +63,14 @@ class StageResultsManager:
 
     def load_stage_results(
         self,
-        stage_number: int,
+        stage_number: str,
         group: str,
     ) -> list[StageResult]:
         """
         Load stage results from JSON file.
 
         Args:
-            stage_number: Stage number
+            stage_number: Stage number (e.g., '1', '3.1', '3.2')
             group: Race group ("A" or "B")
 
         Returns:
@@ -86,21 +87,22 @@ class StageResultsManager:
 
     def load_all_results(
         self,
-        max_stage: int = 6,
-    ) -> tuple[dict[int, list[StageResult]], dict[int, list[StageResult]]]:
+        max_stages: int = TOTAL_STAGES,
+    ) -> tuple[dict[str, list[StageResult]], dict[str, list[StageResult]]]:
         """
         Load all stage results for both groups.
 
         Args:
-            max_stage: Maximum stage number to load
+            max_stages: Maximum number of stages to load (uses STAGE_ORDER)
 
         Returns:
             Tuple of (group_a_results, group_b_results) dicts
         """
-        group_a_results: dict[int, list[StageResult]] = {}
-        group_b_results: dict[int, list[StageResult]] = {}
+        group_a_results: dict[str, list[StageResult]] = {}
+        group_b_results: dict[str, list[StageResult]] = {}
 
-        for stage in range(1, max_stage + 1):
+        stages_to_load = STAGE_ORDER[:max_stages]
+        for stage in stages_to_load:
             a_results = self.load_stage_results(stage, "A")
             if a_results:
                 group_a_results[stage] = a_results
@@ -111,15 +113,15 @@ class StageResultsManager:
 
         return group_a_results, group_b_results
 
-    def get_completed_stages(self) -> list[int]:
+    def get_completed_stages(self) -> list[str]:
         """
         Get list of stage numbers that have results.
 
         Returns:
-            List of completed stage numbers
+            List of completed stage numbers (strings)
         """
         completed = []
-        for stage in range(1, 7):
+        for stage in STAGE_ORDER:
             a_file = self._results_file(stage, "A")
             b_file = self._results_file(stage, "B")
             if a_file.exists() or b_file.exists():
@@ -134,11 +136,15 @@ class StageResultsManager:
             Current tour standings
         """
         group_a_results, group_b_results = self.load_all_results()
-        completed_stages = len(self.get_completed_stages())
+        completed_stages_list = self.get_completed_stages()
+        completed_stages = len(completed_stages_list)
 
         # Determine current stage from actual stage dates
         # Note: This class doesn't have tour_config, so we'll use a conservative default
-        current_stage = min(completed_stages, 6) if completed_stages > 0 else 1
+        if completed_stages > 0:
+            current_stage = completed_stages_list[-1]  # Last completed stage
+        else:
+            current_stage = STAGE_ORDER[0]  # First stage
         is_stage_in_progress = False  # Default to false without tour_config
 
         last_updated = datetime.now().strftime("%Y-%m-%d %H:%M UTC")

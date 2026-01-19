@@ -73,7 +73,7 @@ def sample_race_results() -> list[RaceResult]:
         RaceResult(
             rider_id="997635",
             rider_name="Tom Kennett",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,  # 40 minutes
             finish_position=1,
@@ -82,7 +82,7 @@ def sample_race_results() -> list[RaceResult]:
         RaceResult(
             rider_id="2456208",
             rider_name="Chris Jenkins",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2520,  # 42 minutes
             finish_position=2,
@@ -91,7 +91,7 @@ def sample_race_results() -> list[RaceResult]:
         RaceResult(
             rider_id="1231961",
             rider_name="Eamon Mason",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2700,  # 45 minutes
             finish_position=3,
@@ -100,7 +100,7 @@ def sample_race_results() -> list[RaceResult]:
         RaceResult(
             rider_id="4037257",
             rider_name="Adam Currie",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=3000,  # 50 minutes
             finish_position=4,
@@ -109,7 +109,7 @@ def sample_race_results() -> list[RaceResult]:
         RaceResult(
             rider_id="1098357",
             rider_name="James Turner",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=3300,  # 55 minutes
             finish_position=5,
@@ -124,7 +124,7 @@ def penalty_race_result() -> RaceResult:
     return RaceResult(
         rider_id="1231961",
         rider_name="Eamon Mason",
-        stage_number=1,
+        stage_number="1",
         event_id="12346",
         raw_time_seconds=2600,  # 43:20
         finish_position=1,

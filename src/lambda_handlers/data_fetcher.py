@@ -57,7 +57,8 @@ def load_event_ids_from_s3(bucket: str, key: str = "config/event_ids.json"):
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data = json.loads(response["Body"].read().decode("utf-8"))
-        return {int(k): v for k, v in data.items()}
+        # Keep keys as strings (stage numbers like '1', '3.1', '3.2')
+        return {str(k): v for k, v in data.items()}
     except s3_client.exceptions.NoSuchKey:
         logger.warning(f"Event IDs file not found: s3://{bucket}/{key}")
         return {}
@@ -79,7 +80,7 @@ def load_event_timestamps_from_s3(
 
 def save_results_to_s3(
     bucket: str,
-    stage: int,
+    stage: str,
     group: str,
     results: list,
     tour_id: str = "tdz-2026",
@@ -156,10 +157,12 @@ def handler(event, context):  # noqa: ARG001
 
         if stage_override:
             # Manual override - fetch specific stage regardless of dates
-            current_stage = tour_config.get_stage(int(stage_override))
+            # Convert to string if passed as int (for backwards compatibility)
+            stage_override_str = str(stage_override)
+            current_stage = tour_config.get_stage(stage_override_str)
             if not current_stage:
                 return {"statusCode": 400, "body": f"Invalid stage: {stage_override}"}
-            logger.info(f"Stage override: fetching Stage {stage_override}")
+            logger.info(f"Stage override: fetching Stage {stage_override_str}")
             is_provisional = False  # Treat overridden fetches as final
         else:
             # Normal operation - use current active stage

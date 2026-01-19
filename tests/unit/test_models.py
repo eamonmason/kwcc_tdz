@@ -139,7 +139,7 @@ class TestRaceResult:
         result = RaceResult(
             rider_id="997635",
             rider_name="Tom Kennett",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -154,7 +154,7 @@ class TestRaceResult:
         result = RaceResult(
             rider_id="1",
             rider_name="Test",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,  # 40:00
             finish_position=1,
@@ -195,7 +195,7 @@ class TestStageResult:
         result = StageResult(
             rider_name="Tom Kennett",
             rider_id="997635",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,
@@ -211,7 +211,7 @@ class TestStageResult:
         result = StageResult(
             rider_name="Test",
             rider_id="1",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,  # 40 min
@@ -227,7 +227,7 @@ class TestStageResult:
         result = StageResult(
             rider_name="Test",
             rider_id="1",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,  # 40 min
@@ -246,7 +246,7 @@ class TestStageResult:
         result = StageResult(
             rider_name="Test",
             rider_id="1",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,
@@ -263,7 +263,7 @@ class TestStageResult:
         result_with_handicap = StageResult(
             rider_name="Test",
             rider_id="1",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,
@@ -276,7 +276,7 @@ class TestStageResult:
         result_scratch = StageResult(
             rider_name="Test",
             rider_id="1",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A3",
             raw_time_seconds=2400,
@@ -291,7 +291,7 @@ class TestStageResult:
         leader = StageResult(
             rider_name="Leader",
             rider_id="1",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A1",
             raw_time_seconds=2400,
@@ -305,7 +305,7 @@ class TestStageResult:
         follower = StageResult(
             rider_name="Follower",
             rider_id="2",
-            stage_number=1,
+            stage_number="1",
             race_group="A",
             handicap_group="A2",
             raw_time_seconds=2450,

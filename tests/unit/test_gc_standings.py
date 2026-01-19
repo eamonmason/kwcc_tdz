@@ -10,7 +10,7 @@ from src.processor.gc_standings import (
 def create_stage_result(
     rider_name: str,
     rider_id: str,
-    stage_number: int,
+    stage_number: str,
     race_group: str,
     handicap_group: str,
     adjusted_time: int,
@@ -38,8 +38,8 @@ class TestCalculateGCStandings:
     def test_single_rider_single_stage(self):
         """Test GC with one rider completing one stage."""
         stage_results = {
-            1: [
-                create_stage_result("Tom Kennett", "1", 1, "A", "A1", 3000),
+            "1": [
+                create_stage_result("Tom Kennett", "1", "1", "A", "A1", 3000),
             ]
         }
 
@@ -53,10 +53,10 @@ class TestCalculateGCStandings:
     def test_multiple_riders_sorted_by_time(self):
         """Test riders are sorted by total adjusted time."""
         stage_results = {
-            1: [
-                create_stage_result("Fast Rider", "1", 1, "A", "A1", 2800),
-                create_stage_result("Slow Rider", "2", 1, "A", "A2", 3200),
-                create_stage_result("Mid Rider", "3", 1, "A", "A3", 3000),
+            "1": [
+                create_stage_result("Fast Rider", "1", "1", "A", "A1", 2800),
+                create_stage_result("Slow Rider", "2", "1", "A", "A2", 3200),
+                create_stage_result("Mid Rider", "3", "1", "A", "A3", 3000),
             ]
         }
 
@@ -73,9 +73,9 @@ class TestCalculateGCStandings:
     def test_gaps_calculated_correctly(self):
         """Test gap to leader is calculated correctly."""
         stage_results = {
-            1: [
-                create_stage_result("Leader", "1", 1, "A", "A1", 3000),
-                create_stage_result("Follower", "2", 1, "A", "A2", 3120),
+            "1": [
+                create_stage_result("Leader", "1", "1", "A", "A1", 3000),
+                create_stage_result("Follower", "2", "1", "A", "A2", 3120),
             ]
         }
 
@@ -87,13 +87,13 @@ class TestCalculateGCStandings:
     def test_multiple_stages_summed(self):
         """Test total time is sum of all stage times."""
         stage_results = {
-            1: [
-                create_stage_result("Rider A", "1", 1, "A", "A1", 3000),
-                create_stage_result("Rider B", "2", 1, "A", "A2", 3100),
+            "1": [
+                create_stage_result("Rider A", "1", "1", "A", "A1", 3000),
+                create_stage_result("Rider B", "2", "1", "A", "A2", 3100),
             ],
-            2: [
-                create_stage_result("Rider A", "1", 2, "A", "A1", 2900),
-                create_stage_result("Rider B", "2", 2, "A", "A2", 2800),
+            "2": [
+                create_stage_result("Rider A", "1", "2", "A", "A1", 2900),
+                create_stage_result("Rider B", "2", "2", "A", "A2", 2800),
             ],
         }
 
@@ -110,12 +110,12 @@ class TestCalculateGCStandings:
     def test_rider_must_complete_all_stages(self):
         """Test rider excluded if they haven't completed all stages."""
         stage_results = {
-            1: [
-                create_stage_result("Complete Rider", "1", 1, "A", "A1", 3000),
-                create_stage_result("Incomplete Rider", "2", 1, "A", "A2", 3100),
+            "1": [
+                create_stage_result("Complete Rider", "1", "1", "A", "A1", 3000),
+                create_stage_result("Incomplete Rider", "2", "1", "A", "A2", 3100),
             ],
-            2: [
-                create_stage_result("Complete Rider", "1", 2, "A", "A1", 2900),
+            "2": [
+                create_stage_result("Complete Rider", "1", "2", "A", "A1", 2900),
                 # Rider 2 did not complete stage 2
             ],
         }
@@ -129,9 +129,9 @@ class TestCalculateGCStandings:
     def test_filters_by_race_group(self):
         """Test only riders in specified race group are included."""
         stage_results = {
-            1: [
-                create_stage_result("Group A Rider", "1", 1, "A", "A1", 3000),
-                create_stage_result("Group B Rider", "2", 1, "B", "B1", 3100),
+            "1": [
+                create_stage_result("Group A Rider", "1", "1", "A", "A1", 3000),
+                create_stage_result("Group B Rider", "2", "1", "B", "B1", 3100),
             ]
         }
 
@@ -147,9 +147,9 @@ class TestCalculateGCStandings:
     def test_stage_times_dict_populated(self):
         """Test stage_times dict contains all stage times."""
         stage_results = {
-            1: [create_stage_result("Rider", "1", 1, "A", "A1", 3000)],
-            2: [create_stage_result("Rider", "1", 2, "A", "A1", 2900)],
-            3: [create_stage_result("Rider", "1", 3, "A", "A1", 3100)],
+            "1": [create_stage_result("Rider", "1", "1", "A", "A1", 3000)],
+            "2": [create_stage_result("Rider", "1", "2", "A", "A1", 2900)],
+            "3.1": [create_stage_result("Rider", "1", "3.1", "A", "A1", 3100)],
         }
 
         gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=3)
@@ -157,13 +157,13 @@ class TestCalculateGCStandings:
         assert len(gc.standings) == 1
         stage_times = gc.standings[0].stage_times
 
-        assert stage_times[1] == 3000
-        assert stage_times[2] == 2900
-        assert stage_times[3] == 3100
+        assert stage_times["1"] == 3000
+        assert stage_times["2"] == 2900
+        assert stage_times["3.1"] == 3100
 
     def test_provisional_flag_set(self):
         """Test provisional flag is set correctly."""
-        stage_results = {1: [create_stage_result("Rider", "1", 1, "A", "A1", 3000)]}
+        stage_results = {"1": [create_stage_result("Rider", "1", "1", "A", "A1", 3000)]}
 
         gc_provisional = calculate_gc_standings(
             stage_results, race_group="A", completed_stages=1, is_provisional=True
@@ -187,8 +187,8 @@ class TestCalculateGCStandings:
     def test_stages_completed_tracked(self):
         """Test stages_completed field is set."""
         stage_results = {
-            1: [create_stage_result("Rider", "1", 1, "A", "A1", 3000)],
-            2: [create_stage_result("Rider", "1", 2, "A", "A1", 2900)],
+            "1": [create_stage_result("Rider", "1", "1", "A", "A1", 3000)],
+            "2": [create_stage_result("Rider", "1", "2", "A", "A1", 2900)],
         }
 
         gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=2)
@@ -202,8 +202,12 @@ class TestBuildTourStandings:
 
     def test_builds_both_groups(self):
         """Test tour standings includes both Group A and B."""
-        group_a_results = {1: [create_stage_result("A Rider", "1", 1, "A", "A1", 3000)]}
-        group_b_results = {1: [create_stage_result("B Rider", "2", 1, "B", "B1", 3200)]}
+        group_a_results = {
+            "1": [create_stage_result("A Rider", "1", "1", "A", "A1", 3000)]
+        }
+        group_b_results = {
+            "1": [create_stage_result("B Rider", "2", "1", "B", "B1", 3200)]
+        }
 
         tour = build_tour_standings(
             group_a_results,
@@ -218,14 +222,16 @@ class TestBuildTourStandings:
 
     def test_provisional_based_on_stages(self):
         """Test provisional flag based on completed stages."""
-        group_a_results = {1: [create_stage_result("A Rider", "1", 1, "A", "A1", 3000)]}
+        group_a_results = {
+            "1": [create_stage_result("A Rider", "1", "1", "A", "A1", 3000)]
+        }
 
-        # Less than 6 stages = provisional
+        # Less than 7 stages = provisional
         tour_provisional = build_tour_standings(group_a_results, {}, completed_stages=3)
         assert tour_provisional.group_a.is_provisional is True
 
-        # All 6 stages = final
-        tour_final = build_tour_standings(group_a_results, {}, completed_stages=6)
+        # All 7 stages = final
+        tour_final = build_tour_standings(group_a_results, {}, completed_stages=7)
         assert tour_final.group_a.is_provisional is False
 
     def test_last_updated_set(self):
@@ -247,10 +253,10 @@ class TestBuildTourStandings:
             {},
             {},
             completed_stages=2,
-            current_stage=3,
+            current_stage="3.1",
         )
 
-        assert tour.current_stage == 3
+        assert tour.current_stage == "3.1"
 
 
 class TestGCEdgeCases:
@@ -260,10 +266,10 @@ class TestGCEdgeCases:
         """Test rider who completes more than required stages."""
         # Rider has results for stages 1, 2, 3, but only 2 are completed
         stage_results = {
-            1: [create_stage_result("Eager Rider", "1", 1, "A", "A1", 3000)],
-            2: [create_stage_result("Eager Rider", "1", 2, "A", "A1", 2900)],
-            3: [
-                create_stage_result("Eager Rider", "1", 3, "A", "A1", 3100)
+            "1": [create_stage_result("Eager Rider", "1", "1", "A", "A1", 3000)],
+            "2": [create_stage_result("Eager Rider", "1", "2", "A", "A1", 2900)],
+            "3.1": [
+                create_stage_result("Eager Rider", "1", "3.1", "A", "A1", 3100)
             ],  # Future stage
         }
 
@@ -275,9 +281,9 @@ class TestGCEdgeCases:
     def test_tie_in_time(self):
         """Test riders with identical times."""
         stage_results = {
-            1: [
-                create_stage_result("Rider A", "1", 1, "A", "A1", 3000),
-                create_stage_result("Rider B", "2", 1, "A", "A2", 3000),
+            "1": [
+                create_stage_result("Rider A", "1", "1", "A", "A1", 3000),
+                create_stage_result("Rider B", "2", "1", "A", "A2", 3000),
             ]
         }
 
@@ -295,9 +301,9 @@ class TestGCEdgeCases:
     def test_rider_skips_stage_in_middle(self):
         """Test rider who skips a stage in the middle is excluded."""
         stage_results = {
-            1: [create_stage_result("Skipper", "1", 1, "A", "A1", 3000)],
+            "1": [create_stage_result("Skipper", "1", "1", "A", "A1", 3000)],
             # Stage 2 missing for rider
-            3: [create_stage_result("Skipper", "1", 3, "A", "A1", 3100)],
+            "3.1": [create_stage_result("Skipper", "1", "3.1", "A", "A1", 3100)],
         }
 
         gc = calculate_gc_standings(stage_results, race_group="A", completed_stages=3)
@@ -312,9 +318,13 @@ class TestGuestRiderGCFiltering:
     def test_guest_rider_excluded_from_gc_by_default(self):
         """Test guest riders are excluded from GC standings by default."""
         stage_results = {
-            1: [
-                create_stage_result("Club Rider", "1", 1, "A", "A1", 3000, guest=False),
-                create_stage_result("Guest Rider", "2", 1, "A", "A2", 2900, guest=True),
+            "1": [
+                create_stage_result(
+                    "Club Rider", "1", "1", "A", "A1", 3000, guest=False
+                ),
+                create_stage_result(
+                    "Guest Rider", "2", "1", "A", "A2", 2900, guest=True
+                ),
             ]
         }
 
@@ -329,9 +339,13 @@ class TestGuestRiderGCFiltering:
     def test_guest_rider_included_when_flag_set(self):
         """Test guest riders are included when include_guests=True."""
         stage_results = {
-            1: [
-                create_stage_result("Club Rider", "1", 1, "A", "A1", 3000, guest=False),
-                create_stage_result("Guest Rider", "2", 1, "A", "A2", 2900, guest=True),
+            "1": [
+                create_stage_result(
+                    "Club Rider", "1", "1", "A", "A1", 3000, guest=False
+                ),
+                create_stage_result(
+                    "Guest Rider", "2", "1", "A", "A2", 2900, guest=True
+                ),
             ]
         }
 
@@ -347,8 +361,10 @@ class TestGuestRiderGCFiltering:
     def test_guest_flag_propagated_to_gc_standing(self):
         """Test guest flag is carried through to GC standing."""
         stage_results = {
-            1: [
-                create_stage_result("Guest Rider", "1", 1, "A", "A1", 3000, guest=True),
+            "1": [
+                create_stage_result(
+                    "Guest Rider", "1", "1", "A", "A1", 3000, guest=True
+                ),
             ]
         }
 
@@ -362,10 +378,12 @@ class TestGuestRiderGCFiltering:
     def test_multiple_guest_riders_excluded(self):
         """Test multiple guest riders are all excluded by default."""
         stage_results = {
-            1: [
-                create_stage_result("Club Rider", "1", 1, "A", "A1", 3000, guest=False),
-                create_stage_result("Guest 1", "2", 1, "A", "A2", 2900, guest=True),
-                create_stage_result("Guest 2", "3", 1, "A", "A3", 2950, guest=True),
+            "1": [
+                create_stage_result(
+                    "Club Rider", "1", "1", "A", "A1", 3000, guest=False
+                ),
+                create_stage_result("Guest 1", "2", "1", "A", "A2", 2900, guest=True),
+                create_stage_result("Guest 2", "3", "1", "A", "A3", 2950, guest=True),
             ]
         }
 
@@ -380,10 +398,12 @@ class TestGuestRiderGCFiltering:
     def test_guest_rider_must_complete_all_stages_when_included(self):
         """Test guest riders must complete all stages when included in GC."""
         stage_results = {
-            1: [
-                create_stage_result("Guest Rider", "1", 1, "A", "A1", 3000, guest=True),
+            "1": [
+                create_stage_result(
+                    "Guest Rider", "1", "1", "A", "A1", 3000, guest=True
+                ),
             ],
-            2: [
+            "2": [
                 # Guest rider did not complete stage 2
             ],
         }
@@ -398,15 +418,15 @@ class TestGuestRiderGCFiltering:
     def test_build_tour_standings_respects_guest_flag(self):
         """Test build_tour_standings passes include_guests parameter."""
         group_a_results = {
-            1: [
-                create_stage_result("Club A", "1", 1, "A", "A1", 3000, guest=False),
-                create_stage_result("Guest A", "2", 1, "A", "A2", 2900, guest=True),
+            "1": [
+                create_stage_result("Club A", "1", "1", "A", "A1", 3000, guest=False),
+                create_stage_result("Guest A", "2", "1", "A", "A2", 2900, guest=True),
             ]
         }
         group_b_results = {
-            1: [
-                create_stage_result("Club B", "3", 1, "B", "B1", 3200, guest=False),
-                create_stage_result("Guest B", "4", 1, "B", "B2", 3100, guest=True),
+            "1": [
+                create_stage_result("Club B", "3", "1", "B", "B1", 3200, guest=False),
+                create_stage_result("Guest B", "4", "1", "B", "B2", 3100, guest=True),
             ]
         }
 

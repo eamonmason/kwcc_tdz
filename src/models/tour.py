@@ -117,7 +117,11 @@ class Course(BaseModel):
 class Stage(BaseModel):
     """Tour de Zwift stage configuration."""
 
-    number: int = Field(..., ge=1, le=6)
+    number: str = Field(
+        ...,
+        pattern=r"^[1-6](\.[12])?$",
+        description="Stage number (e.g., '1', '3.1', '3.2')",
+    )
     name: str = Field(..., description="World/location name")
     courses: list[Course] = Field(
         default_factory=list, description="List of courses for this stage"
@@ -288,12 +292,17 @@ DEFAULT_COURSE_PENALTY_EVENTS: list[PenaltyEvent] = [
 ]
 
 
+# Stage order and total stages constants
+STAGE_ORDER: list[str] = ["1", "2", "3.1", "3.2", "4", "5", "6"]
+TOTAL_STAGES: int = 7
+
+
 # Tour de Zwift 2026 stage configuration
 # Each stage starts at 5pm UTC on start day and ends at 4:59pm UTC on transition day
 # (last events finish around 4pm, next stage starts at 5pm same day)
 TOUR_STAGES: list[Stage] = [
     Stage(
-        number=1,
+        number="1",
         name="Makuri Islands",
         courses=[
             Course(
@@ -312,7 +321,7 @@ TOUR_STAGES: list[Stage] = [
         end_datetime=datetime(2026, 1, 12, 16, 59, tzinfo=UTC),  # 4:59pm UTC
     ),
     Stage(
-        number=2,
+        number="2",
         name="France",
         courses=[
             Course(
@@ -329,8 +338,8 @@ TOUR_STAGES: list[Stage] = [
         end_datetime=datetime(2026, 1, 19, 16, 59, tzinfo=UTC),
     ),
     Stage(
-        number=3,
-        name="Scotland/Yorkshire",
+        number="3.1",
+        name="Yorkshire",
         courses=[
             Course(
                 route="Yorkshire Double Loop",
@@ -341,6 +350,14 @@ TOUR_STAGES: list[Stage] = [
                 zwiftpower_search_url="https://zwiftpower.com/events.php?search=tour+de+zwift+stage+3",
                 penalty_events=[],  # No penalties for this course
             ),
+        ],
+        start_datetime=datetime(2026, 1, 19, 17, 0, tzinfo=UTC),
+        end_datetime=datetime(2026, 1, 26, 16, 59, tzinfo=UTC),
+    ),
+    Stage(
+        number="3.2",
+        name="Scotland",
+        courses=[
             Course(
                 route="BRAE-k Fast",
                 distance_km=22.1,
@@ -348,14 +365,14 @@ TOUR_STAGES: list[Stage] = [
                 option_letter="C",
                 zwiftinsider_url="https://zwiftinsider.com/route/brae-k-fast/",
                 zwiftpower_search_url="https://zwiftpower.com/events.php?search=tour+de+zwift+stage+3",
-                penalty_events=[],
+                penalty_events=[],  # No penalties for this course
             ),
         ],
         start_datetime=datetime(2026, 1, 19, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 1, 26, 16, 59, tzinfo=UTC),
     ),
     Stage(
-        number=4,
+        number="4",
         name="London",
         courses=[
             Course(
@@ -372,7 +389,7 @@ TOUR_STAGES: list[Stage] = [
         end_datetime=datetime(2026, 2, 2, 16, 59, tzinfo=UTC),
     ),
     Stage(
-        number=5,
+        number="5",
         name="Watopia",
         courses=[
             Course(
@@ -389,7 +406,7 @@ TOUR_STAGES: list[Stage] = [
         end_datetime=datetime(2026, 2, 9, 16, 59, tzinfo=UTC),
     ),
     Stage(
-        number=6,
+        number="6",
         name="New York",
         courses=[
             Course(
@@ -431,12 +448,22 @@ class TourConfig(BaseModel):
         """S3 prefix for tour config storage."""
         return f"config/{self.tour_id}"
 
-    def get_stage(self, number: int) -> Stage | None:
-        """Get stage by number."""
+    def get_stage(self, number: str) -> Stage | None:
+        """Get stage by number (e.g., '1', '3.1', '3.2')."""
         for stage in self.stages:
             if stage.number == number:
                 return stage
         return None
+
+    def get_adjacent_stages(self, stage_number: str) -> tuple[str | None, str | None]:
+        """Get previous and next stage numbers for navigation."""
+        try:
+            idx = STAGE_ORDER.index(stage_number)
+            prev_stage = STAGE_ORDER[idx - 1] if idx > 0 else None
+            next_stage = STAGE_ORDER[idx + 1] if idx < len(STAGE_ORDER) - 1 else None
+            return prev_stage, next_stage
+        except ValueError:
+            return None, None
 
     @property
     def current_stage(self) -> Stage | None:

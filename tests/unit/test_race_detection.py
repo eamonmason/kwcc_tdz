@@ -248,7 +248,7 @@ class TestStageRaceMethods:
         from src.models.tour import Stage
 
         stage = Stage(
-            number=1,
+            number="1",
             name="Test Stage",
             courses=[
                 Course(
@@ -278,7 +278,7 @@ class TestStageRaceMethods:
         from src.models.tour import Stage
 
         stage = Stage(
-            number=2,
+            number="2",
             name="Test Stage",
             courses=[
                 Course(
@@ -302,7 +302,7 @@ class TestStageRaceMethods:
         from src.models.tour import Stage
 
         stage = Stage(
-            number=3,
+            number="3.1",
             name="Test Stage",
             courses=[
                 Course(

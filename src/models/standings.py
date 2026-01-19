@@ -13,14 +13,14 @@ class GCStanding(BaseModel):
     race_group: str = Field(..., pattern=r"^([AB]|Women)$")
     handicap_group: str = Field(..., pattern=r"^[AB][1-4]$")
     total_adjusted_time_seconds: int = Field(..., ge=0)
-    stages_completed: int = Field(..., ge=0, le=6)
-    stage_times: dict[int, int] = Field(
+    stages_completed: int = Field(..., ge=0, le=7)
+    stage_times: dict[str, int] = Field(
         default_factory=dict,
-        description="Stage number -> stage time (raw + penalty) in seconds",
+        description="Stage number (str) -> stage time (raw + penalty) in seconds",
     )
-    stage_event_ids: dict[int, str] = Field(
+    stage_event_ids: dict[str, str] = Field(
         default_factory=dict,
-        description="Stage number -> ZwiftPower event ID",
+        description="Stage number (str) -> ZwiftPower event ID",
     )
     position: int = Field(default=0, ge=0)  # Set after sorting
     gap_to_leader: int = Field(default=0, ge=0)
@@ -54,7 +54,7 @@ class GCStanding(BaseModel):
         """Short handicap group display."""
         return self.handicap_group
 
-    def get_stage_time_display(self, stage: int) -> str:
+    def get_stage_time_display(self, stage: str) -> str:
         """Get formatted time for a specific stage."""
         if stage in self.stage_times:
             return format_time(self.stage_times[stage])
@@ -66,8 +66,8 @@ class GCStandings(BaseModel):
 
     race_group: str = Field(..., pattern=r"^([AB]|Women)$")
     standings: list[GCStanding] = Field(default_factory=list)
-    total_stages: int = Field(default=6)
-    completed_stages: int = Field(default=0, ge=0, le=6)
+    total_stages: int = Field(default=7)
+    completed_stages: int = Field(default=0, ge=0, le=7)
     last_updated: str | None = Field(default=None)
     is_provisional: bool = Field(default=True)
 
@@ -92,7 +92,7 @@ class TourStandings(BaseModel):
     group_a: GCStandings = Field(default_factory=lambda: GCStandings(race_group="A"))
     group_b: GCStandings = Field(default_factory=lambda: GCStandings(race_group="B"))
     last_updated: str | None = Field(default=None)
-    current_stage: int = Field(default=1, ge=1, le=6)
+    current_stage: str = Field(default="1", pattern=r"^[1-6](\.[12])?$")
     is_stage_in_progress: bool = Field(
         default=False,
         description="Whether a stage is currently active (based on stage dates)",

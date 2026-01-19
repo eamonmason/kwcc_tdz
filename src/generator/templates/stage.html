@@ -133,11 +133,11 @@
 {% block content %}
 <div class="stage-header">
     <nav class="stage-nav">
-        {% if stage_number > 1 %}
-        <a href="stage_{{ stage_number - 1 }}.html" class="nav-prev">&larr; Stage {{ stage_number - 1 }}</a>
+        {% if prev_stage %}
+        <a href="stage_{{ prev_stage }}.html" class="nav-prev">&larr; Stage {{ prev_stage }}</a>
         {% endif %}
-        {% if stage_number < 6 %}
-        <a href="stage_{{ stage_number + 1 }}.html" class="nav-next">Stage {{ stage_number + 1 }} &rarr;</a>
+        {% if next_stage %}
+        <a href="stage_{{ next_stage }}.html" class="nav-next">Stage {{ next_stage }} &rarr;</a>
         {% endif %}
     </nav>
 

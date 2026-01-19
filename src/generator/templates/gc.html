@@ -105,7 +105,7 @@
 <div class="gc-header">
     <h2>General Classification</h2>
     <p class="gc-subtitle" id="gc-subtitle">
-        {{ completed_stages }} of 6 stages completed
+        {{ completed_stages }} of {{ total_stages }} stages completed
         {% if is_provisional %}
         <span class="provisional-badge">PROVISIONAL</span>
         {% endif %}
@@ -115,7 +115,7 @@
 <div class="stage-selector">
     <label for="stage-select">View GC after Stage:</label>
     <select id="stage-select">
-        {% for stage_num in range(1, max_stage + 1) %}
+        {% for stage_num in available_stages %}
         <option value="{{ stage_num }}" {% if stage_num == default_stage %}selected{% endif %}>
             Stage {{ stage_num }}
         </option>
@@ -128,7 +128,7 @@
     <label for="global-show-guests">Show guest riders</label>
 </div>
 
-{% for stage_num in range(1, max_stage + 1) %}
+{% for stage_num in available_stages %}
 <div class="gc-standings-container" id="gc-stage-{{ stage_num }}" data-stage="{{ stage_num }}">
     <div class="gc-standings">
         <section class="group-gc" id="group-a-stage-{{ stage_num }}">
@@ -144,7 +144,7 @@
                             <th>Handicap</th>
                             <th>Total Time</th>
                             <th>Gap</th>
-                            {% for s in range(1, 7) %}
+                            {% for s in stage_order %}
                             <th class="stage-col">S{{ s }}</th>
                             {% endfor %}
                         </tr>
@@ -177,7 +177,7 @@
                             <td class="handicap">{{ standing.handicap_group }}</td>
                             <td class="time total-time">{{ standing.total_time_display if not standing.is_dns else '-' }}</td>
                             <td class="gap">{{ standing.gap_display if not standing.is_dns else '-' }}</td>
-                            {% for s in range(1, 7) %}
+                            {% for s in stage_order %}
                             <td class="stage-time">{% set event_id = standing.stage_event_ids.get(s, '') %}{% if event_id %}<a href="https://zwiftpower.com/events.php?zid={{ event_id }}" target="_blank" title="View on ZwiftPower">{{ standing.get_stage_time_display(s) }}</a>{% else %}{{ standing.get_stage_time_display(s) }}{% endif %}</td>
                             {% endfor %}
                         </tr>
@@ -209,7 +209,7 @@
                             <th>Handicap</th>
                             <th>Total Time</th>
                             <th>Gap</th>
-                            {% for s in range(1, 7) %}
+                            {% for s in stage_order %}
                             <th class="stage-col">S{{ s }}</th>
                             {% endfor %}
                         </tr>
@@ -242,7 +242,7 @@
                             <td class="handicap">{{ standing.handicap_group }}</td>
                             <td class="time total-time">{{ standing.total_time_display if not standing.is_dns else '-' }}</td>
                             <td class="gap">{{ standing.gap_display if not standing.is_dns else '-' }}</td>
-                            {% for s in range(1, 7) %}
+                            {% for s in stage_order %}
                             <td class="stage-time">{% set event_id = standing.stage_event_ids.get(s, '') %}{% if event_id %}<a href="https://zwiftpower.com/events.php?zid={{ event_id }}" target="_blank" title="View on ZwiftPower">{{ standing.get_stage_time_display(s) }}</a>{% else %}{{ standing.get_stage_time_display(s) }}{% endif %}</td>
                             {% endfor %}
                         </tr>
@@ -339,20 +339,21 @@
 (function() {
     const stageSelect = document.getElementById('stage-select');
     const subtitle = document.getElementById('gc-subtitle');
-    const currentStage = {{ current_stage }};
+    const currentStage = "{{ current_stage }}";
     const isStageInProgress = {{ 'true' if is_stage_in_progress else 'false' }};
-    const maxStage = {{ max_stage }};
+    const stageOrder = {{ stage_order | tojson }};
+    const totalStages = {{ total_stages }};
 
     if (!stageSelect) return;
 
     // Track current visible stage so guest filter can update position changes
-    window.currentVisibleStage = parseInt(stageSelect.value);
+    window.currentVisibleStage = stageSelect.value;
 
     // Build position maps for each stage (rider_id -> position)
     function buildPositionMaps() {
         const maps = {};
         document.querySelectorAll('.gc-standings-container').forEach(container => {
-            const stageNum = parseInt(container.dataset.stage);
+            const stageNum = container.dataset.stage;
             maps[stageNum] = {};
 
             // Get all rows with rider-id in this stage container (excluding Women's GC)
@@ -369,6 +370,17 @@
 
     const positionMaps = buildPositionMaps();
 
+    // Get previous stage number from stage order
+    function getPrevStage(stageNum) {
+        const idx = stageOrder.indexOf(stageNum);
+        return idx > 0 ? stageOrder[idx - 1] : null;
+    }
+
+    // Get stage index in order (1-based)
+    function getStageIndex(stageNum) {
+        return stageOrder.indexOf(stageNum) + 1;
+    }
+
     // Update position change indicators for visible stage
     function updatePositionChanges(stageNum) {
         const currentContainer = document.getElementById(`gc-stage-${stageNum}`);
@@ -376,7 +388,8 @@
 
         // Get position maps for current and previous stage
         const currentPositions = positionMaps[stageNum] || {};
-        const prevPositions = stageNum > 1 ? (positionMaps[stageNum - 1] || {}) : {};
+        const prevStage = getPrevStage(stageNum);
+        const prevPositions = prevStage ? (positionMaps[prevStage] || {}) : {};
 
         // Update each row's position cell (excluding Women's GC)
         currentContainer.querySelectorAll('.gc-table:not(.women-gc-table) tr[data-rider-id]').forEach(row => {
@@ -388,8 +401,8 @@
             const existingChange = posCell.querySelector('.position-change');
             if (existingChange) existingChange.remove();
 
-            // Only show changes for Stage 2 onwards
-            if (stageNum <= 1) return;
+            // Only show changes if there's a previous stage
+            if (!prevStage) return;
 
             const currentPos = currentPositions[riderId];
             const prevPos = prevPositions[riderId];
@@ -406,11 +419,11 @@
             if (change > 0) {
                 changeSpan.classList.add('position-up');
                 changeSpan.innerHTML = `(&#8593;${change})`;
-                changeSpan.title = `Up ${change} from Stage ${stageNum - 1}`;
+                changeSpan.title = `Up ${change} from Stage ${prevStage}`;
             } else {
                 changeSpan.classList.add('position-down');
                 changeSpan.innerHTML = `(&#8595;${Math.abs(change)})`;
-                changeSpan.title = `Down ${Math.abs(change)} from Stage ${stageNum - 1}`;
+                changeSpan.title = `Down ${Math.abs(change)} from Stage ${prevStage}`;
             }
 
             posCell.appendChild(changeSpan);
@@ -446,12 +459,15 @@
     // Update the subtitle based on selected stage
     function updateSubtitle(stageNum) {
         let text = '';
+        const stageIdx = getStageIndex(stageNum);
+        const isLastStage = stageOrder.indexOf(stageNum) === stageOrder.length - 1;
+
         if (stageNum === currentStage && isStageInProgress) {
-            text = `${stageNum - 1} of ${maxStage} stages completed, Stage ${stageNum} in progress`;
-        } else if (stageNum === maxStage && maxStage === 6) {
-            text = `All 6 stages completed - Final Classification`;
+            text = `${stageIdx - 1} of ${totalStages} stages completed, Stage ${stageNum} in progress`;
+        } else if (isLastStage && stageIdx === totalStages) {
+            text = `All ${totalStages} stages completed - Final Classification`;
         } else {
-            text = `${stageNum} of ${maxStage} stages completed`;
+            text = `${stageIdx} of ${totalStages} stages completed`;
         }
 
         // Add provisional badge if applicable
@@ -463,11 +479,11 @@
     }
 
     // Initialize with default stage
-    showStageGC(parseInt(stageSelect.value));
+    showStageGC(stageSelect.value);
 
     // Handle stage selection changes
     stageSelect.addEventListener('change', () => {
-        const selectedStage = parseInt(stageSelect.value);
+        const selectedStage = stageSelect.value;
         showStageGC(selectedStage);
     });
 })();

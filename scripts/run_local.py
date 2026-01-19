@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 from src.config import get_tour_config, load_riders_from_csv
 from src.generator import WebsiteGenerator
 from src.models import DEFAULT_PENALTY_CONFIG, RaceResult, StageResult
+from src.models.tour import STAGE_ORDER
 from src.processor import build_tour_standings, process_stage_results
 
 # Paths
@@ -20,7 +21,7 @@ CACHE_DIR = PROJECT_ROOT / "data" / "cache"
 RIDERS_CSV = PROJECT_ROOT / "KW TDZ sign on 2026 - Sheet1.csv"
 
 
-def load_cached_stage_results(stage: int, group: str) -> list[StageResult] | None:
+def load_cached_stage_results(stage: str, group: str) -> list[StageResult] | None:
     """Load cached processed stage results."""
     cache_file = CACHE_DIR / f"stage_{stage}_group_{group}.json"
     if not cache_file.exists():
@@ -29,16 +30,21 @@ def load_cached_stage_results(stage: int, group: str) -> list[StageResult] | Non
     with cache_file.open() as f:
         data = json.load(f)
 
+    # Migrate legacy cache with int stage_number to str
+    for r in data:
+        if isinstance(r.get("stage_number"), int):
+            r["stage_number"] = str(r["stage_number"])
+
     return [StageResult.model_validate(r) for r in data]
 
 
 def load_all_cached_results() -> (
-    dict[int, tuple[list[StageResult], list[StageResult]]] | None
+    dict[str, tuple[list[StageResult], list[StageResult]]] | None
 ):
     """Load all cached stage results."""
-    results: dict[int, tuple[list[StageResult], list[StageResult]]] = {}
+    results: dict[str, tuple[list[StageResult], list[StageResult]]] = {}
 
-    for stage in range(1, 7):
+    for stage in STAGE_ORDER:
         group_a = load_cached_stage_results(stage, "A")
         group_b = load_cached_stage_results(stage, "B")
 
@@ -48,12 +54,15 @@ def load_all_cached_results() -> (
     return results if results else None
 
 
-def create_sample_race_results(rider_registry, stage_number: int) -> list[RaceResult]:
+def create_sample_race_results(rider_registry, stage_number: str) -> list[RaceResult]:
     """Create sample race results for testing."""
     import random
 
     results = []
     base_time = 2400  # 40 minutes base
+
+    # Get stage index for date calculation (e.g., "1" -> 0, "3.1" -> 2, "3.2" -> 3)
+    stage_idx = STAGE_ORDER.index(stage_number) if stage_number in STAGE_ORDER else 0
 
     for rider in rider_registry.riders:
         # Add some randomness to times
@@ -65,10 +74,10 @@ def create_sample_race_results(rider_registry, stage_number: int) -> list[RaceRe
 
         if is_penalty_event:
             # Monday 5pm
-            timestamp = datetime(2026, 1, 5 + (stage_number - 1) * 7, 17, 0, 0)
+            timestamp = datetime(2026, 1, 5 + stage_idx * 7, 17, 0, 0)
         else:
             # Tuesday 6pm (no penalty)
-            timestamp = datetime(2026, 1, 6 + (stage_number - 1) * 7, 18, 0, 0)
+            timestamp = datetime(2026, 1, 6 + stage_idx * 7, 18, 0, 0)
 
         result = RaceResult(
             rider_id=rider.zwiftpower_id,
@@ -106,8 +115,8 @@ def generate_website_from_cache(output_dir: Path) -> tuple[list[Path] | None, bo
     tour_config = get_tour_config()
 
     # Build group results dicts for GC calculation
-    group_a_results: dict[int, list[StageResult]] = {}
-    group_b_results: dict[int, list[StageResult]] = {}
+    group_a_results: dict[str, list[StageResult]] = {}
+    group_b_results: dict[str, list[StageResult]] = {}
 
     for stage, (group_a, group_b) in cached_results.items():
         if group_a:
@@ -157,8 +166,17 @@ def generate_website_from_cache(output_dir: Path) -> tuple[list[Path] | None, bo
         is_mock_data=False,
     )
 
+    # Transform cached_results to include empty uncategorized list
+    # generate_all expects (group_a, group_b, uncategorized) tuples
+    full_stage_results: dict[
+        str, tuple[list[StageResult], list[StageResult], list[StageResult]]
+    ] = {
+        stage: (group_a, group_b, [])
+        for stage, (group_a, group_b) in cached_results.items()
+    }
+
     generated_files = generator.generate_all(
-        cached_results,
+        full_stage_results,
         tour_standings,
         tour_config,
     )
@@ -232,11 +250,14 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
     tour_config = get_tour_config()
 
     # Generate sample results for specified stages
-    group_a_results: dict[int, list[StageResult]] = {}
-    group_b_results: dict[int, list[StageResult]] = {}
-    stage_results_dict: dict[int, tuple[list[StageResult], list[StageResult]]] = {}
+    group_a_results: dict[str, list[StageResult]] = {}
+    group_b_results: dict[str, list[StageResult]] = {}
+    stage_results_dict: dict[str, tuple[list[StageResult], list[StageResult]]] = {}
 
-    for stage in range(1, num_stages + 1):
+    # Use first num_stages from STAGE_ORDER
+    stages_to_generate = STAGE_ORDER[:num_stages]
+
+    for stage in stages_to_generate:
         print(f"Generating Stage {stage} results...", flush=True)
         race_results = create_sample_race_results(rider_registry, stage)
         print(f"  Created {len(race_results)} race results", flush=True)
@@ -245,7 +266,9 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
             race_results,
             rider_registry,
             stage,
-            is_provisional=(stage == num_stages),  # Last stage is provisional
+            is_provisional=(
+                stage == stages_to_generate[-1]
+            ),  # Last stage is provisional
             penalty_config=DEFAULT_PENALTY_CONFIG,
         )
 
@@ -260,11 +283,12 @@ def generate_sample_website(output_dir: Path, num_stages: int = 3):
 
     # Build tour standings
     last_updated = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
+    current_stage = stages_to_generate[-1] if stages_to_generate else "1"
     tour_standings = build_tour_standings(
         group_a_results,
         group_b_results,
         completed_stages=num_stages,
-        current_stage=num_stages if num_stages > 0 else 1,
+        current_stage=current_stage,
         last_updated=last_updated,
         is_stage_in_progress=False,  # Mock data shows final results
     )
@@ -325,7 +349,7 @@ def main():
         "--stages",
         type=int,
         default=3,
-        help="Number of stages to generate for mock data (1-6, default: 3)",
+        help="Number of stages to generate for mock data (1-7, default: 3)",
     )
     parser.add_argument(
         "--port",

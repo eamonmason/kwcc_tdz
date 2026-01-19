@@ -2,15 +2,16 @@
 
 from src.models.result import StageResult
 from src.models.standings import GCStanding, GCStandings, TourStandings
+from src.models.tour import STAGE_ORDER, TOTAL_STAGES
 
 
 def calculate_gc_standings(
-    all_stage_results: dict[int, list[StageResult]],
+    all_stage_results: dict[str, list[StageResult]],
     race_group: str,
     completed_stages: int,
     is_provisional: bool = True,
     include_guests: bool = False,
-    target_stage: int | None = None,
+    target_stage: str | None = None,
     include_dns: bool = False,
 ) -> GCStandings:
     """
@@ -30,16 +31,32 @@ def calculate_gc_standings(
     Returns:
         GCStandings for the race group
     """
-    # Default target_stage to completed_stages
+    # Default target_stage to the Nth stage in STAGE_ORDER (where N = completed_stages)
     if target_stage is None:
-        target_stage = completed_stages
+        target_stage = (
+            STAGE_ORDER[completed_stages - 1]
+            if completed_stages > 0
+            else STAGE_ORDER[0]
+        )
+
+    # Get the index of target_stage in STAGE_ORDER
+    try:
+        target_idx = STAGE_ORDER.index(target_stage)
+    except ValueError:
+        target_idx = 0
+
+    # Stages required for GC (up to and including target_stage)
+    required_stage_list = STAGE_ORDER[: target_idx + 1]
+    required_stages = set(required_stage_list)
+    prior_stage_list = STAGE_ORDER[:target_idx]
+    prior_stages = set(prior_stage_list)
 
     # Collect all riders and their results
-    rider_results: dict[str, dict[int, StageResult]] = {}
+    rider_results: dict[str, dict[str, StageResult]] = {}
 
     for stage_num, results in all_stage_results.items():
         # Only consider stages up to target_stage
-        if stage_num > target_stage:
+        if stage_num not in required_stages:
             continue
 
         for result in results:
@@ -67,7 +84,6 @@ def calculate_gc_standings(
 
     for rider_id, stage_results in rider_results.items():
         # Check if rider completed all stages (up to target_stage)
-        required_stages = set(range(1, target_stage + 1))
         completed = set(stage_results.keys())
 
         # Get rider info from first result
@@ -76,52 +92,51 @@ def calculate_gc_standings(
         if not required_stages.issubset(completed):
             # Check if rider completed all PRIOR stages but not target stage
             # Only include DNS riders if explicitly requested
-            if include_dns:
-                prior_stages = set(range(1, target_stage))
-                if (
-                    prior_stages
-                    and prior_stages.issubset(completed)
-                    and target_stage not in completed
-                ):
-                    # DNS for target stage - include at bottom
-                    # Sum stage_time_seconds (raw + penalty), add handicap ONCE
-                    total_stage_time = sum(
-                        stage_results[s].stage_time_seconds
-                        for s in prior_stages
-                        if s in stage_results
-                    )
-                    handicap_seconds = first_result.handicap_seconds
-                    total_time = total_stage_time + handicap_seconds
+            if (
+                include_dns
+                and prior_stages
+                and prior_stages.issubset(completed)
+                and target_stage not in completed
+            ):
+                # DNS for target stage - include at bottom
+                # Sum stage_time_seconds (raw + penalty), add handicap ONCE
+                total_stage_time = sum(
+                    stage_results[s].stage_time_seconds
+                    for s in prior_stages
+                    if s in stage_results
+                )
+                handicap_seconds = first_result.handicap_seconds
+                total_time = total_stage_time + handicap_seconds
 
-                    # Build stage times dict (store stage_time, not adjusted_time)
-                    stage_times = {
-                        stage: result.stage_time_seconds
-                        for stage, result in stage_results.items()
-                    }
+                # Build stage times dict (store stage_time, not adjusted_time)
+                stage_times = {
+                    stage: result.stage_time_seconds
+                    for stage, result in stage_results.items()
+                }
 
-                    # Build stage event IDs dict for ZwiftPower links
-                    stage_event_ids = {
-                        stage: result.event_id
-                        for stage, result in stage_results.items()
-                        if result.event_id
-                    }
+                # Build stage event IDs dict for ZwiftPower links
+                stage_event_ids = {
+                    stage: result.event_id
+                    for stage, result in stage_results.items()
+                    if result.event_id
+                }
 
-                    standing = GCStanding(
-                        rider_name=first_result.rider_name,
-                        rider_id=rider_id,
-                        race_group=race_group,
-                        handicap_group=first_result.handicap_group,
-                        total_adjusted_time_seconds=total_time,
-                        stages_completed=len(stage_results),
-                        stage_times=stage_times,
-                        stage_event_ids=stage_event_ids,
-                        position=0,  # Will be set after sorting
-                        gap_to_leader=0,  # Will be set after sorting
-                        is_provisional=is_provisional,
-                        guest=first_result.guest,
-                        is_dns=True,
-                    )
-                    dns_standings.append(standing)
+                standing = GCStanding(
+                    rider_name=first_result.rider_name,
+                    rider_id=rider_id,
+                    race_group=race_group,
+                    handicap_group=first_result.handicap_group,
+                    total_adjusted_time_seconds=total_time,
+                    stages_completed=len(stage_results),
+                    stage_times=stage_times,
+                    stage_event_ids=stage_event_ids,
+                    position=0,  # Will be set after sorting
+                    gap_to_leader=0,  # Will be set after sorting
+                    is_provisional=is_provisional,
+                    guest=first_result.guest,
+                    is_dns=True,
+                )
+                dns_standings.append(standing)
             continue
 
         # Calculate total time from completed stages
@@ -174,7 +189,7 @@ def calculate_gc_standings(
     return GCStandings(
         race_group=race_group,
         standings=standings,
-        completed_stages=target_stage,
+        completed_stages=completed_stages,
         is_provisional=is_provisional,
     )
 
@@ -210,8 +225,8 @@ def _calculate_gc_positions_and_gaps(
 
 
 def calculate_women_gc_standings(
-    group_a_results: dict[int, list[StageResult]],
-    group_b_results: dict[int, list[StageResult]],
+    group_a_results: dict[str, list[StageResult]],
+    group_b_results: dict[str, list[StageResult]],
     completed_stages: int,
     is_provisional: bool = True,
     include_guests: bool = False,
@@ -230,8 +245,9 @@ def calculate_women_gc_standings(
         GCStandings for all women combined
     """
     # Combine all results and filter for women
-    all_results: dict[int, list[StageResult]] = {}
-    for stage_num in range(1, completed_stages + 1):
+    all_results: dict[str, list[StageResult]] = {}
+    stages_to_check = STAGE_ORDER[:completed_stages]
+    for stage_num in stages_to_check:
         stage_results = []
         if stage_num in group_a_results:
             stage_results.extend(group_a_results[stage_num])
@@ -254,10 +270,10 @@ def calculate_women_gc_standings(
 
 
 def build_tour_standings(
-    group_a_results: dict[int, list[StageResult]],
-    group_b_results: dict[int, list[StageResult]],
+    group_a_results: dict[str, list[StageResult]],
+    group_b_results: dict[str, list[StageResult]],
     completed_stages: int,
-    current_stage: int = 1,
+    current_stage: str = "1",
     last_updated: str | None = None,
     is_stage_in_progress: bool = False,
     include_guests: bool = False,
@@ -269,7 +285,7 @@ def build_tour_standings(
         group_a_results: Stage results for Group A
         group_b_results: Stage results for Group B
         completed_stages: Number of completed stages
-        current_stage: Current stage number
+        current_stage: Current stage number (string, e.g., '1', '3.1', '3.2')
         last_updated: Timestamp of last update
         is_stage_in_progress: Whether a stage is currently active
         include_guests: Whether to include guest riders in standings (default: False)
@@ -277,7 +293,7 @@ def build_tour_standings(
     Returns:
         TourStandings with both groups
     """
-    is_provisional = completed_stages < 6
+    is_provisional = completed_stages < TOTAL_STAGES
 
     group_a = calculate_gc_standings(
         group_a_results,

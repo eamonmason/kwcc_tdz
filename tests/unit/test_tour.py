@@ -31,7 +31,7 @@ class TestTourConfig:
         assert config.tour_id == "tdz-2026"
         assert config.year == 2026
         assert config.name == "Tour de Zwift 2026"
-        assert len(config.stages) == 6
+        assert len(config.stages) == 7
         assert config.is_archived is False
 
     def test_results_prefix(self):
@@ -57,12 +57,12 @@ class TestTourConfig:
         """Test get_stage by number."""
         config = TourConfig()
 
-        stage = config.get_stage(1)
+        stage = config.get_stage("1")
         assert stage is not None
-        assert stage.number == 1
+        assert stage.number == "1"
         assert stage.name == "Makuri Islands"
 
-        stage = config.get_stage(7)
+        stage = config.get_stage("7")
         assert stage is None
 
 
@@ -72,7 +72,7 @@ class TestStage:
     def test_stage_creation(self):
         """Test basic stage creation."""
         stage = Stage(
-            number=1,
+            number="1",
             name="Makuri Islands",
             route="Turf N Surf",
             distance_km=24.7,
@@ -81,7 +81,7 @@ class TestStage:
             end_datetime=datetime(2026, 1, 12, 16, 59, tzinfo=UTC),
         )
 
-        assert stage.number == 1
+        assert stage.number == "1"
         assert stage.name == "Makuri Islands"
         assert stage.distance_km == 24.7
         # Check backwards-compatible date properties

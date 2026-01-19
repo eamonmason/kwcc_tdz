@@ -18,7 +18,7 @@
                     <li><a href="{{ url_prefix|default('') }}index.html">Home</a></li>
                     <li><a href="{{ url_prefix|default('') }}gc.html">GC Standings</a></li>
                     <li><a href="{{ url_prefix|default('') }}stats.html">Stats</a></li>
-                    {% for stage_num in range(1, 7) %}
+                    {% for stage_num in stage_order %}
                     <li><a href="{{ url_prefix|default('') }}stage_{{ stage_num }}.html">Stage {{ stage_num }}</a></li>
                     {% endfor %}
                     {% if available_years and available_years|length > 1 %}

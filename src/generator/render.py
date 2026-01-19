@@ -7,7 +7,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.models.result import StageResult
 from src.models.standings import TourStandings
-from src.models.tour import TourConfig
+from src.models.tour import STAGE_ORDER, TOTAL_STAGES, TourConfig
 
 
 def create_jinja_env(template_dir: str | Path | None = None) -> Environment:
@@ -81,6 +81,8 @@ class WebsiteGenerator:
             "available_years": self.available_years,
             "url_prefix": self.url_prefix,
             "is_mock_data": self.is_mock_data,
+            "stage_order": STAGE_ORDER,
+            "total_stages": TOTAL_STAGES,
         }
 
     def _render_template(self, template_name: str, context: dict) -> str:
@@ -115,7 +117,7 @@ class WebsiteGenerator:
         tour_config: TourConfig,
         women_gc=None,
         stage_results: dict[
-            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+            str, tuple[list[StageResult], list[StageResult], list[StageResult]]
         ]
         | None = None,
     ) -> Path:
@@ -135,51 +137,61 @@ class WebsiteGenerator:
         upcoming = tour_config.upcoming_stages
         next_stage = upcoming[0] if upcoming else None
 
-        # Calculate position changes from previous stage (if stage > 1)
+        # Calculate position changes from previous stage
         position_changes_a = {}
         position_changes_b = {}
         position_changes_women = {}
 
-        if stage_results and tour_standings.current_stage > 1:
+        # Get previous stage number
+        prev_stage_num, _ = tour_config.get_adjacent_stages(
+            tour_standings.current_stage
+        )
+
+        if stage_results and prev_stage_num:
             from src.processor.gc_standings import (
                 calculate_gc_standings,
                 calculate_women_gc_standings,
             )
 
             # Build stage results dicts for previous stage GC calculation
-            group_a_results: dict[int, list[StageResult]] = {}
-            group_b_results: dict[int, list[StageResult]] = {}
+            group_a_results: dict[str, list[StageResult]] = {}
+            group_b_results: dict[str, list[StageResult]] = {}
 
             for stage_num, (group_a, group_b, _) in stage_results.items():
                 group_a_results[stage_num] = group_a
                 group_b_results[stage_num] = group_b
 
-            # Calculate GC for previous stage (current_stage - 1)
-            prev_stage = tour_standings.current_stage - 1
+            # Calculate GC for previous stage
             completed_stages = tour_standings.group_a.completed_stages
+            # Get the index of prev_stage in STAGE_ORDER for completed stages count
+            try:
+                prev_stage_idx = STAGE_ORDER.index(prev_stage_num)
+                prev_completed = prev_stage_idx + 1  # 1-indexed count
+            except ValueError:
+                prev_completed = completed_stages
 
             prev_gc_a = calculate_gc_standings(
                 group_a_results,
                 "A",
-                completed_stages,
+                prev_completed,
                 tour_standings.is_provisional,
                 include_guests=True,
-                target_stage=prev_stage,
+                target_stage=prev_stage_num,
                 include_dns=False,
             )
             prev_gc_b = calculate_gc_standings(
                 group_b_results,
                 "B",
-                completed_stages,
+                prev_completed,
                 tour_standings.is_provisional,
                 include_guests=True,
-                target_stage=prev_stage,
+                target_stage=prev_stage_num,
                 include_dns=False,
             )
             prev_gc_women = calculate_women_gc_standings(
                 group_a_results,
                 group_b_results,
-                prev_stage,
+                prev_completed,
                 tour_standings.is_provisional,
                 include_guests=True,
             )
@@ -215,7 +227,7 @@ class WebsiteGenerator:
         tour_standings: TourStandings,
         tour_config: TourConfig,  # noqa: ARG002
         stage_results: dict[
-            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+            str, tuple[list[StageResult], list[StageResult], list[StageResult]]
         ],
     ) -> Path:
         """
@@ -234,24 +246,30 @@ class WebsiteGenerator:
             calculate_women_gc_standings,
         )
 
-        # Calculate GC for each stage (1 through max available)
-        max_stage = max(stage_results.keys()) if stage_results else 1
+        # Determine available stages from results (using STAGE_ORDER)
+        available_stages = [s for s in STAGE_ORDER if s in stage_results]
+        max_stage_num = available_stages[-1] if available_stages else STAGE_ORDER[0]
+        max_stage_idx = STAGE_ORDER.index(max_stage_num) if available_stages else 0
         completed_stages = tour_standings.group_a.completed_stages
 
         # Build stage results dict for GC calculation
-        group_a_results: dict[int, list[StageResult]] = {}
-        group_b_results: dict[int, list[StageResult]] = {}
+        group_a_results: dict[str, list[StageResult]] = {}
+        group_b_results: dict[str, list[StageResult]] = {}
 
         for stage_num, (group_a, group_b, _) in stage_results.items():
             group_a_results[stage_num] = group_a
             group_b_results[stage_num] = group_b
 
-        # Calculate GC for each stage
+        # Calculate GC for each stage (in order)
         gc_by_stage_a = {}
         gc_by_stage_b = {}
         gc_by_stage_women = {}
 
-        for stage_num in range(1, max_stage + 1):
+        stages_to_calculate = STAGE_ORDER[: max_stage_idx + 1]
+        for idx, stage_num in enumerate(stages_to_calculate):
+            # completed_count is 1-indexed (how many stages completed up to this one)
+            completed_count = idx + 1
+
             # Only include DNS riders for current stage in progress
             include_dns_riders = (
                 stage_num == tour_standings.current_stage
@@ -261,7 +279,7 @@ class WebsiteGenerator:
             gc_by_stage_a[stage_num] = calculate_gc_standings(
                 group_a_results,
                 "A",
-                completed_stages,
+                completed_count,
                 tour_standings.is_provisional,
                 include_guests=True,
                 target_stage=stage_num,
@@ -270,7 +288,7 @@ class WebsiteGenerator:
             gc_by_stage_b[stage_num] = calculate_gc_standings(
                 group_b_results,
                 "B",
-                completed_stages,
+                completed_count,
                 tour_standings.is_provisional,
                 include_guests=True,
                 target_stage=stage_num,
@@ -279,7 +297,7 @@ class WebsiteGenerator:
             gc_by_stage_women[stage_num] = calculate_women_gc_standings(
                 group_a_results,
                 group_b_results,
-                stage_num,
+                completed_count,
                 tour_standings.is_provisional,
                 include_guests=True,
             )
@@ -294,11 +312,11 @@ class WebsiteGenerator:
         )
         women_gc.last_updated = tour_standings.last_updated
 
-        # Default to current stage or final stage
+        # Default to current stage or final available stage
         default_stage = (
             tour_standings.current_stage
             if tour_standings.is_stage_in_progress
-            else max_stage
+            else max_stage_num
         )
 
         context = {
@@ -311,7 +329,7 @@ class WebsiteGenerator:
             "gc_by_stage_a": gc_by_stage_a,
             "gc_by_stage_b": gc_by_stage_b,
             "gc_by_stage_women": gc_by_stage_women,
-            "max_stage": max_stage,
+            "available_stages": stages_to_calculate,
             "default_stage": default_stage,
             "current_stage": tour_standings.current_stage,
             "is_stage_in_progress": tour_standings.is_stage_in_progress,
@@ -323,7 +341,7 @@ class WebsiteGenerator:
     def generate_stats_page(
         self,
         stage_results: dict[
-            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+            str, tuple[list[StageResult], list[StageResult], list[StageResult]]
         ],
         last_updated: str | None = None,
     ) -> Path:
@@ -407,7 +425,7 @@ class WebsiteGenerator:
 
     def generate_stage_page(
         self,
-        stage_number: int,
+        stage_number: str,
         group_a_results: list[StageResult],
         group_b_results: list[StageResult],
         tour_config: TourConfig,
@@ -418,7 +436,7 @@ class WebsiteGenerator:
         Generate stage results page.
 
         Args:
-            stage_number: Stage number
+            stage_number: Stage number (e.g., '1', '3.1', '3.2')
             group_a_results: Group A stage results
             group_b_results: Group B stage results
             tour_config: Tour configuration
@@ -451,6 +469,9 @@ class WebsiteGenerator:
 
         all_women = _calculate_positions_and_gaps(all_women, use_stage_time=True)
 
+        # Get previous and next stages for navigation
+        prev_stage, next_stage = tour_config.get_adjacent_stages(stage_number)
+
         context = {
             "stage_number": stage_number,
             "stage_name": stage.name if stage else f"Stage {stage_number}",
@@ -467,6 +488,9 @@ class WebsiteGenerator:
             "uncategorized_results": uncategorized_results or [],
             "is_provisional": is_provisional,
             "last_updated": last_updated,
+            # Navigation
+            "prev_stage": prev_stage,
+            "next_stage": next_stage,
         }
 
         content = self._render_template("stage.html", context)
@@ -475,7 +499,7 @@ class WebsiteGenerator:
     def generate_all(
         self,
         stage_results: dict[
-            int, tuple[list[StageResult], list[StageResult], list[StageResult]]
+            str, tuple[list[StageResult], list[StageResult], list[StageResult]]
         ],
         tour_standings: TourStandings,
         tour_config: TourConfig,
@@ -500,8 +524,8 @@ class WebsiteGenerator:
         from src.processor.gc_standings import calculate_women_gc_standings
 
         # Build stage results dict for GC calculation
-        group_a_results: dict[int, list[StageResult]] = {}
-        group_b_results: dict[int, list[StageResult]] = {}
+        group_a_results: dict[str, list[StageResult]] = {}
+        group_b_results: dict[str, list[StageResult]] = {}
 
         for stage_num, (group_a, group_b, _) in stage_results.items():
             group_a_results[stage_num] = group_a

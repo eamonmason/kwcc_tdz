@@ -95,7 +95,7 @@ def apply_handicap(
 def process_stage_results(
     race_results: list[RaceResult],
     rider_registry: RiderRegistry,
-    stage_number: int,  # noqa: ARG001
+    stage_number: str,  # noqa: ARG001
     is_provisional: bool = False,
     penalty_config: PenaltyConfig | None = None,
     stage: Stage | None = None,

@@ -20,7 +20,7 @@ class TestMergeResults:
         return StageResult(
             rider_name=rider_name,
             rider_id=rider_id,
-            stage_number=1,
+            stage_number="1",
             race_group="B",
             handicap_group="B3",
             raw_time_seconds=raw_time_seconds,
@@ -143,7 +143,7 @@ class TestMergeResults:
             StageResult(
                 rider_name="Laura McMullen",
                 rider_id="999",
-                stage_number=1,
+                stage_number="1",
                 race_group="B",
                 handicap_group="B3",
                 raw_time_seconds=2850,
@@ -169,7 +169,7 @@ class TestMergeResults:
         # Verify all fields preserved
         assert result.rider_name == "Laura McMullen"
         assert result.rider_id == "999"
-        assert result.stage_number == 1
+        assert result.stage_number == "1"
         assert result.race_group == "B"
         assert result.handicap_group == "B3"
         assert result.raw_time_seconds == 2850

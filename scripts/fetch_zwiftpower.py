@@ -17,6 +17,7 @@ from src.fetcher import (
     find_tdz_race_events_with_timestamps,
 )
 from src.models import DEFAULT_PENALTY_CONFIG, RaceResult
+from src.models.tour import STAGE_ORDER
 from src.processor import process_stage_results
 
 logging.basicConfig(
@@ -34,13 +35,14 @@ EVENT_IDS_FILE = DATA_DIR / "event_ids.json"
 CACHE_METADATA_FILE = CACHE_DIR / "cache_metadata.json"
 
 
-def load_event_ids() -> dict[int, list[str]]:
+def load_event_ids() -> dict[str, list[str]]:
     """Load cached event IDs from file."""
     if EVENT_IDS_FILE.exists():
         with EVENT_IDS_FILE.open() as f:
             data = json.load(f)
-            # Skip non-numeric keys (like _comment, _instructions)
-            return {int(k): v for k, v in data.items() if k.isdigit()}
+            # Skip non-stage keys (like _comment, _instructions)
+            # Stage numbers can be "1", "2", "3.1", "3.2", etc.
+            return {k: v for k, v in data.items() if k[0].isdigit()}
     return {}
 
 
@@ -77,10 +79,10 @@ def save_cache_metadata(metadata: dict) -> None:
         json.dump(metadata, f, indent=2)
 
 
-def mark_stage_finalized(stage_number: int, rider_count: int) -> None:
+def mark_stage_finalized(stage_number: str, rider_count: int) -> None:
     """Mark a stage's results as finalized (won't be re-fetched)."""
     metadata = load_cache_metadata()
-    metadata["finalized_stages"][str(stage_number)] = {
+    metadata["finalized_stages"][stage_number] = {
         "finalized_at": datetime.now().isoformat(),
         "rider_count": rider_count,
     }
@@ -88,13 +90,13 @@ def mark_stage_finalized(stage_number: int, rider_count: int) -> None:
     logger.info(f"Marked Stage {stage_number} as finalized ({rider_count} riders)")
 
 
-def is_stage_finalized(stage_number: int) -> bool:
+def is_stage_finalized(stage_number: str) -> bool:
     """Check if a stage's results are finalized."""
     metadata = load_cache_metadata()
-    return str(stage_number) in metadata.get("finalized_stages", {})
+    return stage_number in metadata.get("finalized_stages", {})
 
 
-def mark_event_cached(event_id: str, stage_number: int, rider_count: int) -> None:
+def mark_event_cached(event_id: str, stage_number: str, rider_count: int) -> None:
     """Mark an event's results as cached."""
     metadata = load_cache_metadata()
     if "event_cache" not in metadata:
@@ -107,7 +109,7 @@ def mark_event_cached(event_id: str, stage_number: int, rider_count: int) -> Non
     save_cache_metadata(metadata)
 
 
-def get_cached_event_ids(stage_number: int) -> set[str]:
+def get_cached_event_ids(stage_number: str) -> set[str]:
     """Get event IDs that have already been cached for a stage."""
     metadata = load_cache_metadata()
     event_cache = metadata.get("event_cache", {})
@@ -118,7 +120,7 @@ def get_cached_event_ids(stage_number: int) -> set[str]:
     }
 
 
-def save_event_ids(event_ids: dict[int, list[str]]) -> None:
+def save_event_ids(event_ids: dict[str, list[str]]) -> None:
     """Save event IDs to cache file."""
     EVENT_IDS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with EVENT_IDS_FILE.open("w") as f:
@@ -126,7 +128,7 @@ def save_event_ids(event_ids: dict[int, list[str]]) -> None:
     logger.info(f"Saved event IDs to {EVENT_IDS_FILE}")
 
 
-def cache_race_results(stage: int, results: list[RaceResult]) -> None:
+def cache_race_results(stage: str, results: list[RaceResult]) -> None:
     """Cache raw race results to file."""
     cache_file = CACHE_DIR / f"stage_{stage}_raw.json"
     cache_file.parent.mkdir(parents=True, exist_ok=True)
@@ -137,7 +139,7 @@ def cache_race_results(stage: int, results: list[RaceResult]) -> None:
     logger.info(f"Cached {len(results)} raw results to {cache_file}")
 
 
-def load_cached_race_results(stage: int) -> list[RaceResult] | None:
+def load_cached_race_results(stage: str) -> list[RaceResult] | None:
     """Load cached raw race results."""
     cache_file = CACHE_DIR / f"stage_{stage}_raw.json"
     if not cache_file.exists():
@@ -149,7 +151,7 @@ def load_cached_race_results(stage: int) -> list[RaceResult] | None:
     return [RaceResult.model_validate(r) for r in data]
 
 
-def save_stage_results(stage: int, group: str, results: list) -> None:
+def save_stage_results(stage: str, group: str, results: list) -> None:
     """Save processed stage results to cache."""
     cache_file = CACHE_DIR / f"stage_{stage}_group_{group}.json"
     cache_file.parent.mkdir(parents=True, exist_ok=True)
@@ -164,7 +166,7 @@ def discover_event_ids(
     client: ZwiftPowerClient,
     tour_config,
     force: bool = False,
-) -> dict[int, list[str]]:
+) -> dict[str, list[str]]:
     """Discover TdZ event IDs from ZwiftPower."""
     existing = load_event_ids()
     existing_timestamps = load_event_timestamps()
@@ -173,16 +175,18 @@ def discover_event_ids(
         logger.info(f"Using cached event IDs for {len(existing)} stages")
         return existing
 
-    event_ids: dict[int, list[str]] = {}
+    event_ids: dict[str, list[str]] = {}
     event_timestamps: dict[str, str] = existing_timestamps.copy()
 
     for stage in tour_config.stages:
         try:
-            logger.info(f"Searching for Stage {stage.number}: {stage.route}")
+            # Get primary route from first course
+            stage_route = stage.courses[0].route if stage.courses else ""
+            logger.info(f"Searching for Stage {stage.number}: {stage_route}")
             events_with_ts = find_tdz_race_events_with_timestamps(
                 client,
                 stage.number,
-                stage.route,
+                stage_route,
                 stage.start_date,
                 stage.end_date,
             )
@@ -207,7 +211,7 @@ def discover_event_ids(
 
 def fetch_stage_from_zwiftpower(
     client: ZwiftPowerClient,
-    stage_number: int,
+    stage_number: str,
     event_ids: list[str],
     rider_registry,
     use_cache: bool = True,
@@ -311,7 +315,7 @@ def fetch_stage_from_zwiftpower(
 def fetch_all_stages(
     username: str | None = None,
     password: str | None = None,
-    stages: list[int] | None = None,
+    stages: list[str] | None = None,
     force_refresh: bool = False,
     discover_events: bool = False,
 ) -> None:
@@ -443,9 +447,9 @@ How to find event IDs:
     parser.add_argument(
         "--stages",
         "-s",
-        type=int,
+        type=str,
         nargs="+",
-        help="Specific stages to fetch (default: all available)",
+        help="Specific stages to fetch (e.g., 1 2 3.1 3.2, default: all available)",
     )
     parser.add_argument(
         "--force",
@@ -483,7 +487,7 @@ How to find event IDs:
         event_ids = load_event_ids()
         print("\nConfigured Event IDs:")
         print("-" * 40)
-        for stage in range(1, 7):
+        for stage in STAGE_ORDER:
             ids = event_ids.get(stage, [])
             if ids:
                 print(f"Stage {stage}: {', '.join(ids)}")
@@ -497,7 +501,8 @@ How to find event IDs:
     if args.set_event_ids:
         try:
             event_ids = json.loads(args.set_event_ids)
-            event_ids = {int(k): v for k, v in event_ids.items()}
+            # Keep keys as strings (stage numbers like '1', '3.1', '3.2')
+            event_ids = {str(k): v for k, v in event_ids.items()}
             save_event_ids(event_ids)
             logger.info(f"Set event IDs: {event_ids}")
             print(f"Saved event IDs for {len(event_ids)} stages")
@@ -507,7 +512,7 @@ How to find event IDs:
 
     # Add single event
     if args.add_event:
-        stage = int(args.add_event[0])
+        stage = args.add_event[0]  # Keep as string (e.g., "1", "3.1", "3.2")
         event_id = args.add_event[1]
         event_ids = load_event_ids()
         if stage not in event_ids:

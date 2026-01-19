@@ -10,7 +10,11 @@ class RaceResult(BaseModel):
 
     rider_id: str = Field(..., description="ZwiftPower user ID")
     rider_name: str = Field(..., description="Rider name from ZwiftPower")
-    stage_number: int = Field(..., ge=1, le=6, description="Stage number (1-6)")
+    stage_number: str = Field(
+        ...,
+        pattern=r"^[1-6](\.[12])?$",
+        description="Stage number (e.g., '1', '3.1', '3.2')",
+    )
     event_id: str = Field(..., description="ZwiftPower event ID")
     event_name: str = Field(default="", description="Event name from ZwiftPower")
     raw_time_seconds: int = Field(..., ge=0, description="Finish time in seconds")
@@ -33,7 +37,11 @@ class StageResult(BaseModel):
 
     rider_name: str = Field(..., description="Rider display name")
     rider_id: str = Field(..., description="ZwiftPower user ID")
-    stage_number: int = Field(..., ge=1, le=6)
+    stage_number: str = Field(
+        ...,
+        pattern=r"^[1-6](\.[12])?$",
+        description="Stage number (e.g., '1', '3.1', '3.2')",
+    )
     race_group: str | None = Field(default=None, pattern=r"^[AB]$")
     handicap_group: str | None = Field(default=None, pattern=r"^[AB][1-4]$")
     raw_time_seconds: int = Field(..., ge=0)

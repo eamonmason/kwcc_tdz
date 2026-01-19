@@ -22,7 +22,7 @@ class TestApplyHandicap:
         race_result = RaceResult(
             rider_id="1",
             rider_name="Fast A",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,  # 40 min
             finish_position=1,
@@ -42,7 +42,7 @@ class TestApplyHandicap:
         race_result = RaceResult(
             rider_id="3",
             rider_name="Slow A",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2700,  # 45 min
             finish_position=3,
@@ -60,7 +60,7 @@ class TestApplyHandicap:
         race_result = RaceResult(
             rider_id="4",
             rider_name="Fast B",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -78,7 +78,7 @@ class TestApplyHandicap:
         race_result = RaceResult(
             rider_id="6",
             rider_name="Mid B",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2700,
             finish_position=2,
@@ -96,7 +96,7 @@ class TestApplyHandicap:
         race_result = RaceResult(
             rider_id="123",
             rider_name="Test Rider",
-            stage_number=3,
+            stage_number="3.1",
             event_id="12345",
             raw_time_seconds=2500,
             finish_position=5,
@@ -109,7 +109,7 @@ class TestApplyHandicap:
         assert stage_result.rider_id == "123"
         assert stage_result.race_group == "A"
         assert stage_result.handicap_group == "A2"
-        assert stage_result.stage_number == 3
+        assert stage_result.stage_number == "3.1"
         assert stage_result.raw_position == 5
 
 
@@ -122,7 +122,7 @@ class TestApplyHandicapAndPenalty:
         race_result = RaceResult(
             rider_id="1",
             rider_name="Test",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -142,7 +142,7 @@ class TestApplyHandicapAndPenalty:
         race_result = RaceResult(
             rider_id="1",
             rider_name="Test",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -163,7 +163,7 @@ class TestApplyHandicapAndPenalty:
         race_result = RaceResult(
             rider_id="1",
             rider_name="Test",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,  # 40 min
             finish_position=1,
@@ -183,7 +183,7 @@ class TestApplyHandicapAndPenalty:
         race_result = RaceResult(
             rider_id="1",
             rider_name="Test",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -208,7 +208,7 @@ class TestProcessStageResults:
         group_a, group_b, _ = process_stage_results(
             sample_race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
         )
 
         assert len(group_a) == 3  # Tom (A1), Chris (A2), Eamon (A3)
@@ -224,7 +224,7 @@ class TestProcessStageResults:
         group_a, _, _ = process_stage_results(
             sample_race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
         )
 
         # Results sorted by adjusted time
@@ -239,7 +239,7 @@ class TestProcessStageResults:
         group_a, _, _ = process_stage_results(
             sample_race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
         )
 
         assert group_a[0].gap_to_leader == 0  # Leader
@@ -254,7 +254,7 @@ class TestProcessStageResults:
             RaceResult(
                 rider_id="997635",  # Tom Kennett (A1)
                 rider_name="Tom Kennett",
-                stage_number=1,
+                stage_number="1",
                 event_id="12345",
                 raw_time_seconds=2400,
                 finish_position=1,
@@ -265,7 +265,7 @@ class TestProcessStageResults:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             penalty_config=DEFAULT_PENALTY_CONFIG,
         )
 
@@ -280,7 +280,7 @@ class TestProcessStageResults:
             RaceResult(
                 rider_id="997635",  # Known rider
                 rider_name="Tom Kennett",
-                stage_number=1,
+                stage_number="1",
                 event_id="12345",
                 raw_time_seconds=2400,
                 finish_position=1,
@@ -289,7 +289,7 @@ class TestProcessStageResults:
             RaceResult(
                 rider_id="unknown123",  # Unknown rider
                 rider_name="Unknown Person",
-                stage_number=1,
+                stage_number="1",
                 event_id="12345",
                 raw_time_seconds=2300,
                 finish_position=2,
@@ -300,7 +300,7 @@ class TestProcessStageResults:
         group_a, group_b, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
         )
 
         total_results = len(group_a) + len(group_b)
@@ -313,7 +313,7 @@ class TestProcessStageResults:
         group_a, group_b, _ = process_stage_results(
             sample_race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             is_provisional=True,
         )
 
@@ -330,7 +330,7 @@ class TestGetBestResultPerRider:
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
-                stage_number=1,
+                stage_number="1",
                 race_group="A",
                 handicap_group="A1",
                 raw_time_seconds=2400,
@@ -341,7 +341,7 @@ class TestGetBestResultPerRider:
             StageResult(
                 rider_name="Rider 2",
                 rider_id="2",
-                stage_number=1,
+                stage_number="1",
                 race_group="A",
                 handicap_group="A2",
                 raw_time_seconds=2500,
@@ -362,7 +362,7 @@ class TestGetBestResultPerRider:
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
-                stage_number=1,
+                stage_number="1",
                 race_group="A",
                 handicap_group="A1",
                 raw_time_seconds=2600,  # 43:20 raw + 600 = 3200
@@ -374,7 +374,7 @@ class TestGetBestResultPerRider:
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
-                stage_number=1,
+                stage_number="1",
                 race_group="A",
                 handicap_group="A1",
                 raw_time_seconds=2400,  # 40:00 raw + 600 = 3000
@@ -407,7 +407,7 @@ class TestGetBestResultPerRider:
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
-                stage_number=1,
+                stage_number="1",
                 race_group="A",
                 handicap_group="A1",
                 raw_time_seconds=2710,  # 45:10 raw + 600 handicap + 60 penalty = 3370
@@ -420,7 +420,7 @@ class TestGetBestResultPerRider:
             StageResult(
                 rider_name="Rider 1",
                 rider_id="1",
-                stage_number=1,
+                stage_number="1",
                 race_group="A",
                 handicap_group="A1",
                 raw_time_seconds=2730,  # 45:30 raw + 600 handicap + 0 penalty = 3330
@@ -469,7 +469,7 @@ class TestProcessStageResultsWithMultipleRaces:
             RaceResult(
                 rider_id="123",
                 rider_name="Judah Rand",
-                stage_number=1,
+                stage_number="1",
                 event_id="5215254",  # Monday 5pm event
                 raw_time_seconds=2015,  # 33:35
                 finish_position=1,
@@ -479,7 +479,7 @@ class TestProcessStageResultsWithMultipleRaces:
             RaceResult(
                 rider_id="123",
                 rider_name="Judah Rand",
-                stage_number=1,
+                stage_number="1",
                 event_id="5215255",  # Monday 7pm event
                 raw_time_seconds=2048,  # 34:08
                 finish_position=1,
@@ -490,7 +490,7 @@ class TestProcessStageResultsWithMultipleRaces:
         _group_a, group_b, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             penalty_config=DEFAULT_PENALTY_CONFIG,
         )
 
@@ -522,7 +522,7 @@ class TestProcessStageResultsWithMultipleRaces:
             RaceResult(
                 rider_id="1",
                 rider_name="Rider A",
-                stage_number=1,
+                stage_number="1",
                 event_id="event1",
                 raw_time_seconds=2000,  # Fastest raw + 60s penalty = 2060
                 finish_position=1,
@@ -532,7 +532,7 @@ class TestProcessStageResultsWithMultipleRaces:
             RaceResult(
                 rider_id="1",
                 rider_name="Rider A",
-                stage_number=1,
+                stage_number="1",
                 event_id="event2",
                 raw_time_seconds=2050,  # Slower raw, no penalty = 2050
                 finish_position=2,
@@ -542,7 +542,7 @@ class TestProcessStageResultsWithMultipleRaces:
             RaceResult(
                 rider_id="2",
                 rider_name="Rider B",
-                stage_number=1,
+                stage_number="1",
                 event_id="event1",
                 raw_time_seconds=2100,
                 finish_position=3,
@@ -553,7 +553,7 @@ class TestProcessStageResultsWithMultipleRaces:
         group_a, group_b, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             penalty_config=DEFAULT_PENALTY_CONFIG,
         )
 
@@ -586,7 +586,7 @@ class TestGuestRiderHandling:
         race_result = RaceResult(
             rider_id="999",
             rider_name="Guest Rider",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -608,7 +608,7 @@ class TestGuestRiderHandling:
         race_result = RaceResult(
             rider_id="123",
             rider_name="Club Member",
-            stage_number=1,
+            stage_number="1",
             event_id="12345",
             raw_time_seconds=2400,
             finish_position=1,
@@ -636,7 +636,7 @@ class TestGuestRiderHandling:
             RaceResult(
                 rider_id="1",
                 rider_name="Club Rider",
-                stage_number=1,
+                stage_number="1",
                 event_id="12345",
                 raw_time_seconds=2400,
                 finish_position=1,
@@ -645,7 +645,7 @@ class TestGuestRiderHandling:
             RaceResult(
                 rider_id="2",
                 rider_name="Guest Rider",
-                stage_number=1,
+                stage_number="1",
                 event_id="12345",
                 raw_time_seconds=2500,
                 finish_position=2,
@@ -656,7 +656,7 @@ class TestGuestRiderHandling:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
         )
 
         assert len(group_a) == 2
@@ -678,7 +678,7 @@ class TestRaceEventPenalty:
 
         # Create a stage with race events allowed and 60s penalty
         stage = Stage(
-            number=1,
+            number="1",
             name="Test Stage",
             courses=[
                 Course(
@@ -699,7 +699,7 @@ class TestRaceEventPenalty:
             RaceResult(
                 rider_id="1",
                 rider_name="Test Rider",
-                stage_number=1,
+                stage_number="1",
                 event_id="race123",
                 event_name="Tour de Zwift Stage 1 - Race",
                 raw_time_seconds=2400,
@@ -711,7 +711,7 @@ class TestRaceEventPenalty:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             stage=stage,
         )
 
@@ -729,7 +729,7 @@ class TestRaceEventPenalty:
 
         # Create a stage with both race penalty and time penalty
         stage = Stage(
-            number=1,
+            number="1",
             name="Test Stage",
             courses=[
                 Course(
@@ -758,7 +758,7 @@ class TestRaceEventPenalty:
             RaceResult(
                 rider_id="1",
                 rider_name="Test Rider",
-                stage_number=1,
+                stage_number="1",
                 event_id="race123",
                 event_name="Tour de Zwift Stage 1 - Race",
                 raw_time_seconds=2400,
@@ -770,7 +770,7 @@ class TestRaceEventPenalty:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             stage=stage,
         )
 
@@ -788,7 +788,7 @@ class TestRaceEventPenalty:
         registry = RiderRegistry(riders=[rider])
 
         stage = Stage(
-            number=1,
+            number="1",
             name="Test Stage",
             courses=[
                 Course(
@@ -809,7 +809,7 @@ class TestRaceEventPenalty:
             RaceResult(
                 rider_id="1",
                 rider_name="Test Rider",
-                stage_number=1,
+                stage_number="1",
                 event_id="ride123",
                 event_name="Tour de Zwift Stage 1 - Group Ride",
                 raw_time_seconds=2400,
@@ -821,7 +821,7 @@ class TestRaceEventPenalty:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=1,
+            stage_number="1",
             stage=stage,
         )
 
@@ -842,7 +842,7 @@ class TestRaceEventExclusion:
 
         # Stage 2+ configuration: races not allowed
         stage = Stage(
-            number=2,
+            number="2",
             name="Test Stage",
             courses=[
                 Course(
@@ -866,7 +866,7 @@ class TestRaceEventExclusion:
             RaceResult(
                 rider_id="1",
                 rider_name="Test Rider",
-                stage_number=2,
+                stage_number="2",
                 event_id="race123",
                 event_name="Tour de Zwift Stage 2 - Race",
                 raw_time_seconds=2300,  # Faster time
@@ -877,7 +877,7 @@ class TestRaceEventExclusion:
             RaceResult(
                 rider_id="1",
                 rider_name="Test Rider",
-                stage_number=2,
+                stage_number="2",
                 event_id="ride456",
                 event_name="Tour de Zwift Stage 2 - Group Ride",
                 raw_time_seconds=2400,  # Slower time
@@ -889,7 +889,7 @@ class TestRaceEventExclusion:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=2,
+            stage_number="2",
             stage=stage,
         )
 
@@ -909,7 +909,7 @@ class TestRaceEventExclusion:
         registry = RiderRegistry(riders=riders)
 
         stage = Stage(
-            number=2,
+            number="2",
             name="Test Stage",
             courses=[
                 Course(
@@ -933,7 +933,7 @@ class TestRaceEventExclusion:
             RaceResult(
                 rider_id="1",
                 rider_name="Rider A",
-                stage_number=2,
+                stage_number="2",
                 event_id="race123",
                 event_name="Stage 2 - Race",
                 raw_time_seconds=2300,
@@ -944,7 +944,7 @@ class TestRaceEventExclusion:
             RaceResult(
                 rider_id="2",
                 rider_name="Rider B",
-                stage_number=2,
+                stage_number="2",
                 event_id="ride456",
                 event_name="Stage 2 - Group Ride",
                 raw_time_seconds=2400,
@@ -956,7 +956,7 @@ class TestRaceEventExclusion:
         group_a, _, _ = process_stage_results(
             race_results,
             registry,
-            stage_number=2,
+            stage_number="2",
             stage=stage,
         )
 

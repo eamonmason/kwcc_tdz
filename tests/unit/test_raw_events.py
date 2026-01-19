@@ -248,7 +248,7 @@ class TestRawEventStoreGetStageEvents:
 
         result = store.get_stage_events(
             events,
-            stage_number=2,
+            stage_number="2",
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 31),
         )
@@ -277,7 +277,7 @@ class TestRawEventStoreGetStageEvents:
 
         result = store.get_stage_events(
             events,
-            stage_number=2,
+            stage_number="2",
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 31),
         )
@@ -309,7 +309,7 @@ class TestRawEventStoreGetStageEvents:
 
         result = store.get_stage_events(
             events,
-            stage_number=2,
+            stage_number="2",
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 31),
         )
@@ -337,7 +337,7 @@ class TestRawEventStoreGetStageEvents:
 
         result = store.get_stage_events(
             events,
-            stage_number=2,
+            stage_number="2",
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 31),
         )
@@ -363,7 +363,7 @@ class TestRawEventStoreGetStageEvents:
 
         result = store.get_stage_events(
             events,
-            stage_number=2,
+            stage_number="2",
             start_date=date(2026, 1, 1),
             end_date=date(2026, 1, 31),
         )
@@ -487,7 +487,7 @@ class TestRawEventStoreIntegration:
         # Query for Stage 2 events in the Jan 13-19 date range
         result = store.get_stage_events(
             persisted_events,
-            stage_number=2,
+            stage_number="2",
             start_date=date(2026, 1, 13),
             end_date=date(2026, 1, 19),
         )
