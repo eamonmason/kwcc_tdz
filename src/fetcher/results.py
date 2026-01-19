@@ -127,6 +127,12 @@ def _fetch_results_json(
                 if isinstance(power_val, list):
                     power_val = power_val[0] if power_val else None
 
+                # Get category from multiple possible field names
+                # ZwiftPower API uses different field names in different contexts
+                category = (
+                    entry.get("category") or entry.get("cat") or entry.get("c") or "C"
+                )
+
                 result = RaceResult(
                     rider_id=rider_id,
                     rider_name=rider_name,
@@ -136,7 +142,7 @@ def _fetch_results_json(
                     raw_time_seconds=raw_time,
                     finish_position=position,
                     timestamp=timestamp,
-                    category=entry.get("category", "C"),
+                    category=category,
                     power_avg=power_val,
                     heart_rate_avg=hr_val,
                 )
