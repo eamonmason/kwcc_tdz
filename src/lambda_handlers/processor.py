@@ -36,6 +36,12 @@ def load_stage_results_from_s3(
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data = json.loads(response["Body"].read().decode("utf-8"))
+
+        # Migrate legacy data with int stage_number to str
+        for r in data:
+            if isinstance(r.get("stage_number"), int):
+                r["stage_number"] = str(r["stage_number"])
+
         return [StageResult.model_validate(r) for r in data]
     except s3_client.exceptions.NoSuchKey:
         return []
@@ -65,6 +71,12 @@ def load_manual_results_from_s3(
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data = json.loads(response["Body"].read().decode("utf-8"))
+
+        # Migrate legacy data with int stage_number to str
+        for r in data:
+            if isinstance(r.get("stage_number"), int):
+                r["stage_number"] = str(r["stage_number"])
+
         results = [StageResult.model_validate(r) for r in data]
         if results:
             logger.info(
