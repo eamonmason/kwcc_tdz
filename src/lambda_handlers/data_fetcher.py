@@ -325,6 +325,14 @@ def handler(event, context):  # noqa: ARG001
             except Exception as e:
                 logger.warning(f"Authentication failed: {e}")
 
+            # Extract category filter from primary course option_letter
+            # This filters results to only include riders who chose this route option
+            category_filter = (
+                current_stage.courses[0].option_letter
+                if current_stage.courses
+                else None
+            )
+
             # Fetch results for current stage
             race_results = fetch_stage_results(
                 client,
@@ -333,6 +341,7 @@ def handler(event, context):  # noqa: ARG001
                 rider_registry,
                 event_timestamps,
                 event_names,
+                category_filter,
             )
 
         logger.info(f"Fetched {len(race_results)} results")

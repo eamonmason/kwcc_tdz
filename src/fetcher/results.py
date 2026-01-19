@@ -18,6 +18,7 @@ def fetch_event_results(
     rider_registry: RiderRegistry | None = None,
     event_timestamp: datetime | None = None,
     event_name: str | None = None,
+    category_filter: str | None = None,
 ) -> list[RaceResult]:
     """
     Fetch race results for a ZwiftPower event.
@@ -29,6 +30,8 @@ def fetch_event_results(
         rider_registry: Optional rider registry to filter results
         event_timestamp: Optional event start timestamp (for penalty calculation)
         event_name: Optional event name (for race detection)
+        category_filter: Optional category filter (A, B, C, D, or E) to only include riders
+                        who rode that route option
 
     Returns:
         List of race results
@@ -41,6 +44,8 @@ def fetch_event_results(
             client, event_id, stage_number, event_timestamp, event_name
         )
         if results:
+            if category_filter:
+                results = _filter_by_category(results, category_filter)
             if rider_registry:
                 results = _filter_to_kwcc(results, rider_registry)
             return results
@@ -52,6 +57,8 @@ def fetch_event_results(
         client, event_id, stage_number, event_timestamp, event_name
     )
 
+    if category_filter:
+        results = _filter_by_category(results, category_filter)
     if rider_registry:
         results = _filter_to_kwcc(results, rider_registry)
 
@@ -238,6 +245,24 @@ def _fetch_results_html(
     return results
 
 
+def _filter_by_category(
+    results: list[RaceResult],
+    category: str,
+) -> list[RaceResult]:
+    """Filter results to only include riders who rode a specific route category."""
+    filtered_results = []
+
+    for result in results:
+        if result.category == category:
+            filtered_results.append(result)
+
+    logger.info(
+        f"Filtered to {len(filtered_results)} riders in category {category} "
+        f"from {len(results)} total"
+    )
+    return filtered_results
+
+
 def _filter_to_kwcc(
     results: list[RaceResult],
     rider_registry: RiderRegistry,
@@ -263,6 +288,7 @@ def fetch_stage_results(
     rider_registry: RiderRegistry,
     event_timestamps: dict[str, datetime] | None = None,
     event_names: dict[str, str] | None = None,
+    category_filter: str | None = None,
 ) -> list[RaceResult]:
     """
     Fetch results from multiple events for a stage.
@@ -274,6 +300,8 @@ def fetch_stage_results(
         rider_registry: Rider registry for filtering
         event_timestamps: Optional dict mapping event_id to event start datetime
         event_names: Optional dict mapping event_id to event name (for race detection)
+        category_filter: Optional category filter (A, B, C, D, or E) to only include riders
+                        who rode that route option
 
     Returns:
         Combined list of all race results (may include multiple per rider).
@@ -298,6 +326,7 @@ def fetch_stage_results(
                 rider_registry,
                 event_timestamp,
                 event_name,
+                category_filter,
             )
 
             # Keep all results - best selection happens after penalties are applied
