@@ -6,7 +6,7 @@ from pathlib import Path
 from src.models.tour import TOUR_STAGES, Stage, TourConfig
 
 
-def load_event_ids(json_path: str | Path) -> dict[int, list[str]]:
+def load_event_ids(json_path: str | Path) -> dict[str, list[str]]:
     """
     Load ZwiftPower event IDs from JSON file.
 
@@ -14,7 +14,7 @@ def load_event_ids(json_path: str | Path) -> dict[int, list[str]]:
         json_path: Path to event IDs JSON file
 
     Returns:
-        Dict mapping stage number to list of event IDs
+        Dict mapping stage number (as string) to list of event IDs
     """
     json_path = Path(json_path)
     if not json_path.exists():
@@ -23,16 +23,16 @@ def load_event_ids(json_path: str | Path) -> dict[int, list[str]]:
     with json_path.open(encoding="utf-8") as f:
         data = json.load(f)
 
-    # Convert string keys to int
-    return {int(k): v for k, v in data.items()}
+    # Keep keys as strings (stage numbers like "1", "3.1", "3.2")
+    return {str(k): v for k, v in data.items()}
 
 
-def save_event_ids(event_ids: dict[int, list[str]], json_path: str | Path) -> None:
+def save_event_ids(event_ids: dict[str, list[str]], json_path: str | Path) -> None:
     """
     Save ZwiftPower event IDs to JSON file.
 
     Args:
-        event_ids: Dict mapping stage number to list of event IDs
+        event_ids: Dict mapping stage number (as string) to list of event IDs
         json_path: Path to output JSON file
     """
     json_path = Path(json_path)
@@ -54,7 +54,7 @@ def get_tour_config(event_ids_path: str | Path | None = None) -> TourConfig:
     """
     # Create stages with event IDs if available
     stages: list[Stage] = []
-    event_ids: dict[int, list[str]] = {}
+    event_ids: dict[str, list[str]] = {}
 
     if event_ids_path:
         event_ids = load_event_ids(event_ids_path)
@@ -67,6 +67,7 @@ def get_tour_config(event_ids_path: str | Path | None = None) -> TourConfig:
             courses=base_stage.courses,
             start_datetime=base_stage.start_datetime,
             end_datetime=base_stage.end_datetime,
+            event_search_patterns=base_stage.event_search_patterns,
             # Legacy fields for backwards compatibility
             route=base_stage.route,
             distance_km=base_stage.distance_km,
@@ -79,7 +80,7 @@ def get_tour_config(event_ids_path: str | Path | None = None) -> TourConfig:
 
 
 def add_event_id(
-    stage_number: int,
+    stage_number: str,
     event_id: str,
     event_ids_path: str | Path,
 ) -> None:
@@ -87,7 +88,7 @@ def add_event_id(
     Add an event ID for a stage.
 
     Args:
-        stage_number: Stage number (1-6)
+        stage_number: Stage number (e.g., "1", "3.1", "3.2")
         event_id: ZwiftPower event ID
         event_ids_path: Path to event IDs JSON file
     """
