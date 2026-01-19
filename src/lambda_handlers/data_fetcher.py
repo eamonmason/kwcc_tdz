@@ -13,6 +13,10 @@ from src.models import DEFAULT_PENALTY_CONFIG
 from src.persistence import RawEventStore
 from src.processor import process_stage_results
 
+# Maximum days to search for events in ZwiftPower API
+# This should be set to the maximum supported by ZwiftPower (14 days)
+RAW_EVENT_SEARCH_DAYS = 14
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -188,8 +192,13 @@ def handler(event, context):  # noqa: ARG001
 
                 from src.fetcher.events import search_events_api
 
-                # Search for recent Tour de Zwift events from API
-                discovered_events = search_events_api(client, "Tour de Zwift", days=14)
+                # Search for Tour de Zwift events from API (maximum 14 days back)
+                logger.info(
+                    f"Searching ZwiftPower API for events from past {RAW_EVENT_SEARCH_DAYS} days"
+                )
+                discovered_events = search_events_api(
+                    client, "Tour de Zwift", days=RAW_EVENT_SEARCH_DAYS
+                )
                 logger.info(f"Discovered {len(discovered_events)} events from API")
 
                 # Merge with persisted events (ELT pattern - accumulate over time)
