@@ -133,23 +133,30 @@ class RawEventStore:
     def get_stage_events(
         self,
         events: dict[str, dict],
-        stage_number: int,
+        stage_number: str,
         start_date: date,
         end_date: date,
+        event_search_patterns: list[str] | None = None,
     ) -> list[tuple[str, datetime | None]]:
         """
         Filter accumulated events to a specific stage's date range.
 
         Args:
             events: Dictionary of all persisted events
-            stage_number: Stage number to filter for (1-6)
+            stage_number: Stage number (for logging only)
             start_date: Stage start date
             end_date: Stage end date
+            event_search_patterns: Patterns to match in event names (e.g., ["stage 3"])
 
         Returns:
             List of tuples (event_id, event_datetime) matching the stage
         """
-        stage_pattern = f"stage {stage_number}"
+        # Use provided patterns or default to "stage {number}"
+        if event_search_patterns:
+            patterns = [p.lower() for p in event_search_patterns]
+        else:
+            patterns = [f"stage {stage_number}"]
+
         start_ts = datetime.combine(start_date, datetime.min.time()).timestamp()
         end_ts = datetime.combine(end_date, datetime.max.time()).timestamp()
 
@@ -159,8 +166,8 @@ class RawEventStore:
             event_name = (event_data.get("name", "") or "").lower()
             event_ts = event_data.get("timestamp", 0)
 
-            # Must match stage number in name
-            if stage_pattern not in event_name:
+            # Must match at least one pattern in name
+            if not any(pattern in event_name for pattern in patterns):
                 continue
 
             # Exclude run events

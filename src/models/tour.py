@@ -129,6 +129,11 @@ class Stage(BaseModel):
     # Use datetime for precise stage boundaries (events start/end at specific times)
     start_datetime: datetime = Field(..., description="First event start time (UTC)")
     end_datetime: datetime = Field(..., description="Last event end time (UTC)")
+    # Event name patterns for discovery (e.g., ["stage 3"] for both 3.1 and 3.2)
+    event_search_patterns: list[str] = Field(
+        default_factory=list,
+        description="Patterns to match in event names for discovery",
+    )
 
     # Legacy fields for backwards compatibility (single-course stages)
     route: str | None = Field(default=None, description="Route name (deprecated)")
@@ -319,6 +324,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 1, 5, 17, 0, tzinfo=UTC),  # 5pm UTC
         end_datetime=datetime(2026, 1, 12, 16, 59, tzinfo=UTC),  # 4:59pm UTC
+        event_search_patterns=["stage 1"],
     ),
     Stage(
         number="2",
@@ -336,6 +342,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 1, 12, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 1, 19, 16, 59, tzinfo=UTC),
+        event_search_patterns=["stage 2"],
     ),
     Stage(
         number="3.1",
@@ -353,6 +360,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 1, 19, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 1, 26, 16, 59, tzinfo=UTC),
+        event_search_patterns=["stage 3"],  # Both 3.1 and 3.2 share "stage 3" events
     ),
     Stage(
         number="3.2",
@@ -370,6 +378,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 1, 19, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 1, 26, 16, 59, tzinfo=UTC),
+        event_search_patterns=["stage 3"],  # Both 3.1 and 3.2 share "stage 3" events
     ),
     Stage(
         number="4",
@@ -387,6 +396,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 1, 26, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 2, 2, 16, 59, tzinfo=UTC),
+        event_search_patterns=["stage 4"],
     ),
     Stage(
         number="5",
@@ -404,6 +414,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 2, 2, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 2, 9, 16, 59, tzinfo=UTC),
+        event_search_patterns=["stage 5"],
     ),
     Stage(
         number="6",
@@ -421,6 +432,7 @@ TOUR_STAGES: list[Stage] = [
         ],
         start_datetime=datetime(2026, 2, 9, 17, 0, tzinfo=UTC),
         end_datetime=datetime(2026, 2, 16, 16, 59, tzinfo=UTC),
+        event_search_patterns=["stage 6"],
     ),
 ]
 

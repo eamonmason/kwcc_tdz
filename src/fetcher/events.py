@@ -297,11 +297,12 @@ def find_tdz_race_events(
 
 def find_tdz_race_events_with_timestamps(
     client: ZwiftPowerClient,
-    stage_number: int,
+    stage_number: str,
     route_name: str,
     start_date: date,
     end_date: date,
     preloaded_events: list[dict] | None = None,
+    event_search_patterns: list[str] | None = None,
 ) -> list[tuple[str, datetime | None]]:
     """
     Find Tour de Zwift event IDs for a specific stage with timestamps.
@@ -312,13 +313,14 @@ def find_tdz_race_events_with_timestamps(
 
     Args:
         client: ZwiftPower client
-        stage_number: Stage number (1-6)
+        stage_number: Stage number (e.g., '1', '3.1', '3.2')
         route_name: Expected route name
         start_date: Stage start date
         end_date: Stage end date
         preloaded_events: Optional list of pre-loaded events to use instead of
             fetching from API. This enables the ELT pattern where events are
             accumulated in S3 and passed in rather than always re-fetched.
+        event_search_patterns: Patterns to match in event names (e.g., ["stage 3"])
 
     Returns:
         List of tuples (event_id, event_timestamp)
@@ -358,7 +360,12 @@ def find_tdz_race_events_with_timestamps(
     events_with_timestamps: list[tuple[str, datetime | None]] = []
     scored_events = []
 
-    stage_pattern = f"stage {stage_number}"
+    # Use provided patterns or default to "stage {number}"
+    if event_search_patterns:
+        patterns = [p.lower() for p in event_search_patterns]
+    else:
+        patterns = [f"stage {stage_number}"]
+
     start_ts = datetime.combine(start_date, datetime.min.time()).timestamp()
     end_ts = datetime.combine(end_date, datetime.max.time()).timestamp()
 
@@ -367,8 +374,8 @@ def find_tdz_race_events_with_timestamps(
         event_ts = event.get("timestamp", 0)
         score = 0
 
-        # Must match stage number
-        if stage_pattern not in event_name:
+        # Must match at least one pattern
+        if not any(pattern in event_name for pattern in patterns):
             continue
 
         # Score based on various criteria
@@ -415,13 +422,13 @@ def find_tdz_race_events_with_timestamps(
             seen_ids.add(event_id)
 
     if not events_with_timestamps:
-        # Include any Stage X TdZ events as fallback
+        # Include any matching TdZ events as fallback
         for event in events:
             event_name = event.get("name", "").lower()
 
             # Include ALL event types (races and rides), exclude only run events
             if (
-                stage_pattern in event_name
+                any(pattern in event_name for pattern in patterns)
                 and "run" not in event_name
                 and event["id"] not in seen_ids
             ):

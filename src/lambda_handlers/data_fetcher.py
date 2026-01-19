@@ -220,7 +220,11 @@ def handler(event, context):  # noqa: ARG001
             event_names.update(raw_store.get_event_names(all_events))
 
         # Check for configured event IDs first
+        # Try exact stage number (e.g., "3.1"), then fall back to base stage (e.g., "3")
         stage_event_ids = event_ids.get(current_stage.number, [])
+        if not stage_event_ids:
+            base_stage = current_stage.number.split(".")[0]
+            stage_event_ids = event_ids.get(base_stage, [])
 
         # If no configured event IDs, filter from accumulated events
         if not stage_event_ids:
@@ -257,6 +261,7 @@ def handler(event, context):  # noqa: ARG001
                         current_stage.start_datetime.date(),
                         current_stage.end_datetime.date(),
                         preloaded_events=events_list,
+                        event_search_patterns=current_stage.event_search_patterns,
                     )
 
                 if events_with_ts:
