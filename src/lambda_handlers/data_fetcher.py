@@ -10,6 +10,7 @@ import boto3
 from src.config import get_tour_config
 from src.fetcher import ZwiftPowerClient, fetch_stage_results
 from src.models import DEFAULT_PENALTY_CONFIG
+from src.persistence import RawEventStore
 from src.processor import process_stage_results
 
 logger = logging.getLogger()
@@ -166,16 +167,101 @@ def handler(event, context):  # noqa: ARG001
 
         logger.info(f"Processing Stage {current_stage.number}: {current_stage.name}")
 
-        # Get event IDs for current stage
-        stage_event_ids = event_ids.get(current_stage.number, [])
+        # Initialize raw event store for ELT pattern
+        raw_store = RawEventStore(data_bucket)
+
+        # Load previously persisted events from S3
+        persisted_events = raw_store.load_events()
 
         # Build event_names dict from course configuration
         event_names = {}
         for course in current_stage.courses:
             event_names.update(course.event_names)
 
-        # Fetch event names from ZwiftPower if not in course config
-        # This is needed for race penalty detection
+        # Discover new events from ZwiftPower API and merge with persisted
+        try:
+            with ZwiftPowerClient(username, password) as client:
+                try:
+                    client.authenticate()
+                except Exception as e:
+                    logger.warning(f"Authentication failed: {e}")
+
+                from src.fetcher.events import search_events_api
+
+                # Search for recent Tour de Zwift events from API
+                discovered_events = search_events_api(client, "Tour de Zwift", days=14)
+                logger.info(f"Discovered {len(discovered_events)} events from API")
+
+                # Merge with persisted events (ELT pattern - accumulate over time)
+                all_events = raw_store.merge_events(persisted_events, discovered_events)
+
+                # Persist the merged events to S3
+                raw_store.save_events(all_events)
+
+                # Get event names from persisted events
+                event_names.update(raw_store.get_event_names(all_events))
+
+        except Exception as e:
+            logger.warning(f"Failed to discover/persist events: {e}")
+            # Fall back to using persisted events only
+            all_events = persisted_events
+            event_names.update(raw_store.get_event_names(all_events))
+
+        # Check for configured event IDs first
+        stage_event_ids = event_ids.get(current_stage.number, [])
+
+        # If no configured event IDs, filter from accumulated events
+        if not stage_event_ids:
+            logger.info(
+                f"No event IDs configured for Stage {current_stage.number}, "
+                "filtering from persisted events"
+            )
+
+            # Convert persisted events dict to list format for filtering
+            events_list = [
+                {
+                    "id": event_id,
+                    "name": event_data.get("name", ""),
+                    "timestamp": event_data.get("timestamp", 0),
+                    "route_id": event_data.get("route_id", ""),
+                }
+                for event_id, event_data in all_events.items()
+            ]
+
+            try:
+                from src.fetcher.events import find_tdz_race_events_with_timestamps
+
+                # Get route from primary course
+                stage_route = (
+                    current_stage.courses[0].route if current_stage.courses else ""
+                )
+
+                # Use preloaded_events parameter to avoid re-fetching from API
+                with ZwiftPowerClient(username, password) as client:
+                    events_with_ts = find_tdz_race_events_with_timestamps(
+                        client,
+                        current_stage.number,
+                        stage_route,
+                        current_stage.start_datetime.date(),
+                        current_stage.end_datetime.date(),
+                        preloaded_events=events_list,
+                    )
+
+                if events_with_ts:
+                    stage_event_ids = [event_id for event_id, _ in events_with_ts]
+                    # Update event_timestamps with discovered data
+                    for event_id, event_dt in events_with_ts:
+                        if event_dt and event_id not in event_timestamps:
+                            event_timestamps[event_id] = event_dt
+
+                    logger.info(
+                        f"Found {len(stage_event_ids)} events for Stage {current_stage.number} "
+                        f"from {len(all_events)} persisted events"
+                    )
+            except Exception as e:
+                logger.error(f"Stage event filtering failed: {e}")
+
+        # Fetch event names for any missing events (for race penalty detection)
         if stage_event_ids:
             missing_names = [eid for eid in stage_event_ids if eid not in event_names]
             if missing_names:
@@ -190,119 +276,28 @@ def handler(event, context):  # noqa: ARG001
                         except Exception as e:
                             logger.warning(f"Authentication failed: {e}")
 
-                        from src.fetcher.events import search_events_api
+                        from src.fetcher.events import get_event_details
 
-                        # Search for recent Tour de Zwift events
-                        discovered_events = search_events_api(
-                            client, "Tour de Zwift", days=14
-                        )
+                        # Limit to first 50 events to avoid Lambda timeout
+                        max_individual_fetches = min(50, len(missing_names))
+                        individual_count = 0
+                        for event_id in missing_names[:max_individual_fetches]:
+                            try:
+                                details = get_event_details(client, event_id)
+                                event_names[event_id] = details.get("title", "")
+                                individual_count += 1
+                            except Exception as e:
+                                logger.debug(
+                                    f"Failed to fetch details for event {event_id}: {e}"
+                                )
+                                continue
 
-                        # Map event IDs to names
-                        for event in discovered_events:
-                            event_id = event.get("id")
-                            if event_id in missing_names:
-                                event_names[event_id] = event.get("name", "")
-
-                        found_count = len(
-                            [e for e in missing_names if e in event_names]
-                        )
                         logger.info(
-                            f"Fetched names for {found_count} of {len(missing_names)} events via search"
+                            f"Fetched names for {individual_count} of {len(missing_names)} events"
                         )
-
-                        # For remaining events without names, try fetching individually
-                        # Limit to first 50 events to avoid Lambda timeout and rate limiting
-                        still_missing = [
-                            eid for eid in missing_names if eid not in event_names
-                        ]
-                        if still_missing:
-                            max_individual_fetches = min(50, len(still_missing))
-                            logger.info(
-                                f"Fetching event details individually for up to {max_individual_fetches} "
-                                f"of {len(still_missing)} remaining events"
-                            )
-                            from src.fetcher.events import get_event_details
-
-                            # Fetch in batches to avoid timeouts
-                            individual_count = 0
-                            for event_id in still_missing[:max_individual_fetches]:
-                                try:
-                                    details = get_event_details(client, event_id)
-                                    event_names[event_id] = details.get("title", "")
-                                    individual_count += 1
-                                except Exception as e:
-                                    logger.debug(
-                                        f"Failed to fetch details for event {event_id}: {e}"
-                                    )
-                                    continue
-
-                            logger.info(
-                                f"Fetched names for {individual_count} additional events individually"
-                            )
-                            logger.info(
-                                f"Total: {found_count + individual_count} of {len(missing_names)} events have names"
-                            )
 
                 except Exception as e:
                     logger.warning(f"Failed to fetch event names: {e}")
-
-        # If no event IDs configured, try dynamic discovery
-        if not stage_event_ids:
-            logger.info(
-                f"No event IDs configured for Stage {current_stage.number}, "
-                "attempting dynamic discovery"
-            )
-            try:
-                from src.fetcher.events import find_tdz_race_events_with_timestamps
-
-                with ZwiftPowerClient(username, password) as client:
-                    # Attempt authentication for API access
-                    try:
-                        client.authenticate()
-                    except Exception as e:
-                        logger.warning(f"Authentication failed: {e}")
-
-                    # Discover events for this stage
-                    from src.fetcher.events import search_events_api
-
-                    # Search for events to get names and metadata
-                    discovered_events = search_events_api(
-                        client, "Tour de Zwift", days=14
-                    )
-
-                    # Filter to events matching this stage
-                    # Get route from primary course
-                    stage_route = (
-                        current_stage.courses[0].route if current_stage.courses else ""
-                    )
-                    events_with_ts = find_tdz_race_events_with_timestamps(
-                        client,
-                        current_stage.number,
-                        stage_route,
-                        current_stage.start_datetime.date(),
-                        current_stage.end_datetime.date(),
-                    )
-
-                    if events_with_ts:
-                        stage_event_ids = [event_id for event_id, _ in events_with_ts]
-                        # Update event_timestamps and event_names with discovered data
-                        for event_id, event_dt in events_with_ts:
-                            if event_dt and event_id not in event_timestamps:
-                                event_timestamps[event_id] = event_dt
-                            # Find event name from discovered events
-                            for discovered_event in discovered_events:
-                                if discovered_event.get("id") == event_id:
-                                    event_names[event_id] = discovered_event.get(
-                                        "name", ""
-                                    )
-                                    break
-
-                        logger.info(
-                            f"Dynamically discovered {len(stage_event_ids)} events "
-                            f"for Stage {current_stage.number}"
-                        )
-            except Exception as e:
-                logger.error(f"Dynamic discovery failed: {e}")
 
         if not stage_event_ids:
             logger.warning(

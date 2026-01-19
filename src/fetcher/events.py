@@ -301,6 +301,7 @@ def find_tdz_race_events_with_timestamps(
     route_name: str,
     start_date: date,
     end_date: date,
+    preloaded_events: list[dict] | None = None,
 ) -> list[tuple[str, datetime | None]]:
     """
     Find Tour de Zwift event IDs for a specific stage with timestamps.
@@ -315,6 +316,9 @@ def find_tdz_race_events_with_timestamps(
         route_name: Expected route name
         start_date: Stage start date
         end_date: Stage end date
+        preloaded_events: Optional list of pre-loaded events to use instead of
+            fetching from API. This enables the ELT pattern where events are
+            accumulated in S3 and passed in rather than always re-fetched.
 
     Returns:
         List of tuples (event_id, event_timestamp)
@@ -327,21 +331,28 @@ def find_tdz_race_events_with_timestamps(
         f"events between {start_date} and {end_date}"
     )
 
-    # Calculate days to look back
-    days_since_start = (date.today() - start_date).days + 1
-    days_to_search = min(max(days_since_start, 7), 14)
+    # Use pre-loaded events if provided (ELT pattern)
+    if preloaded_events is not None:
+        logger.info(f"Using {len(preloaded_events)} pre-loaded events")
+        events = preloaded_events
+    else:
+        # Calculate days to look back
+        days_since_start = (date.today() - start_date).days + 1
+        days_to_search = min(max(days_since_start, 7), 14)
 
-    # Search using the API (uses cached events list)
-    events = search_events_api(client, "Tour de Zwift", days=days_to_search)
+        # Search using the API (uses cached events list)
+        events = search_events_api(client, "Tour de Zwift", days=days_to_search)
 
-    # Also search for "Stage X" specifically
-    if not events:
-        events = search_events_api(client, f"Stage {stage_number}", days=days_to_search)
+        # Also search for "Stage X" specifically
+        if not events:
+            events = search_events_api(
+                client, f"Stage {stage_number}", days=days_to_search
+            )
 
-    if not events:
-        # Fall back to HTML search
-        logger.info("API search found no events, trying HTML search")
-        events = search_events_html(client, "Tour de Zwift", start_date, end_date)
+        if not events:
+            # Fall back to HTML search
+            logger.info("API search found no events, trying HTML search")
+            events = search_events_html(client, "Tour de Zwift", start_date, end_date)
 
     # Filter for events matching this stage
     events_with_timestamps: list[tuple[str, datetime | None]] = []
