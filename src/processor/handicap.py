@@ -35,8 +35,8 @@ def apply_handicap_and_penalty(
     penalty_reason = ""
 
     if race_result.timestamp:
-        # Prefer per-course penalty_events if provided
-        if penalty_events:
+        # Prefer per-course penalty_events if provided (even if empty list = no penalties)
+        if penalty_events is not None:
             penalty_seconds = calculate_penalty_from_events(
                 race_result.timestamp,
                 penalty_events,
@@ -154,7 +154,7 @@ def process_stage_results(
         stage_result = apply_handicap_and_penalty(
             race_result,
             rider,
-            penalty_config=penalty_config if not penalty_events else None,
+            penalty_config=penalty_config if penalty_events is None else None,
             penalty_events=penalty_events,
             race_penalty_seconds=race_penalty,
         )
