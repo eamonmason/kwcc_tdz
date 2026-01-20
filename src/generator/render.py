@@ -277,9 +277,9 @@ class WebsiteGenerator:
             # completed_count is 1-indexed (how many stages completed up to this one)
             completed_count = idx + 1
 
-            # Only include DNS riders for current stage in progress
+            # Include DNS riders for any active stage in progress (handles concurrent stages)
             include_dns_riders = (
-                stage_num == tour_standings.current_stage
+                stage_num in tour_standings.active_stages
                 and tour_standings.is_stage_in_progress
             )
 
