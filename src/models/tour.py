@@ -479,11 +479,14 @@ class TourConfig(BaseModel):
 
     @property
     def current_stage(self) -> Stage | None:
-        """Get the currently active stage."""
-        for stage in self.stages:
-            if stage.is_active:
-                return stage
-        return None
+        """Get the currently active stage (last one if multiple are concurrent)."""
+        active = self.current_stages
+        return active[-1] if active else None
+
+    @property
+    def current_stages(self) -> list[Stage]:
+        """Get all currently active stages (for concurrent stages like 3.1 and 3.2)."""
+        return [s for s in self.stages if s.is_active]
 
     @property
     def completed_stages(self) -> list[Stage]:

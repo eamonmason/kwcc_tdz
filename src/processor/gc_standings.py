@@ -277,6 +277,7 @@ def build_tour_standings(
     last_updated: str | None = None,
     is_stage_in_progress: bool = False,
     include_guests: bool = False,
+    active_stages: list[str] | None = None,
 ) -> TourStandings:
     """
     Build complete tour standings for both groups.
@@ -289,6 +290,7 @@ def build_tour_standings(
         last_updated: Timestamp of last update
         is_stage_in_progress: Whether a stage is currently active
         include_guests: Whether to include guest riders in standings (default: False)
+        active_stages: All currently active stage numbers (for concurrent stages)
 
     Returns:
         TourStandings with both groups
@@ -318,5 +320,6 @@ def build_tour_standings(
         group_b=group_b,
         last_updated=last_updated,
         current_stage=current_stage,
+        active_stages=active_stages or [current_stage],
         is_stage_in_progress=is_stage_in_progress,
     )

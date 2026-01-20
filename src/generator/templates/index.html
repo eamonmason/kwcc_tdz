@@ -45,7 +45,7 @@
     {% if is_stage_in_progress %}
     <div class="status-banner provisional">
         <span class="status-icon">&#9888;</span>
-        Provisional Results - Stage {{ current_stage }} in progress
+        Provisional Results - {% if active_stages|length > 1 %}Stages {% for s in active_stages %}{{ s.number }}{% if not loop.last %} &amp; {% endif %}{% endfor %}{% else %}Stage {{ current_stage }}{% endif %} in progress
     </div>
     {% elif is_provisional %}
     <div class="status-banner">

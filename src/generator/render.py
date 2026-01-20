@@ -204,12 +204,19 @@ class WebsiteGenerator:
             for standing in prev_gc_women.standings:
                 position_changes_women[standing.rider_id] = standing.position
 
+        # Get active stage objects for display
+        active_stage_objects = [
+            tour_config.get_stage(s) for s in tour_standings.active_stages
+        ]
+        active_stage_objects = [s for s in active_stage_objects if s]  # Filter None
+
         context = {
             "group_a": tour_standings.group_a,
             "group_b": tour_standings.group_b,
             "women_gc": women_gc,
             "stages": tour_config.stages,
             "current_stage": tour_standings.current_stage,
+            "active_stages": active_stage_objects,
             "is_provisional": tour_standings.is_provisional,
             "is_stage_in_progress": tour_standings.is_stage_in_progress,
             "next_stage": next_stage,

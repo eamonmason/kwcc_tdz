@@ -269,14 +269,17 @@ def handler(event, context):  # noqa: ARG001
         # Calculate completed stages based on data
         completed_stages = max(len(group_a_results), len(group_b_results))
 
-        # Determine current stage and provisional status from actual stage dates
-        active_stage = tour_config.current_stage
-        if active_stage:
-            # A stage is actively in progress
-            current_stage = active_stage.number
+        # Determine current stage(s) and provisional status from actual stage dates
+        # current_stages returns all concurrent active stages (e.g., 3.1 and 3.2)
+        active_stages = tour_config.current_stages
+        if active_stages:
+            # Stage(s) actively in progress - use last one as "current" for GC default
+            active_stage_numbers = [s.number for s in active_stages]
+            current_stage = active_stage_numbers[-1]  # Last in order
             is_stage_in_progress = True
         else:
             # No stage currently active (between stages or tour complete)
+            active_stage_numbers = []
             if completed_stages > 0:
                 current_stage = STAGE_ORDER[
                     min(completed_stages - 1, len(STAGE_ORDER) - 1)
@@ -295,6 +298,7 @@ def handler(event, context):  # noqa: ARG001
             last_updated,
             is_stage_in_progress,
             include_guests=True,  # Include guests so they can be toggled on/off
+            active_stages=active_stage_numbers,
         )
 
         # Generate website

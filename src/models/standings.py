@@ -93,6 +93,10 @@ class TourStandings(BaseModel):
     group_b: GCStandings = Field(default_factory=lambda: GCStandings(race_group="B"))
     last_updated: str | None = Field(default=None)
     current_stage: str = Field(default="1", pattern=r"^[1-6](\.[12])?$")
+    active_stages: list[str] = Field(
+        default_factory=list,
+        description="All currently active stage numbers (for concurrent stages)",
+    )
     is_stage_in_progress: bool = Field(
         default=False,
         description="Whether a stage is currently active (based on stage dates)",
