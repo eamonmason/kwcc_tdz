@@ -9,8 +9,15 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# AWS clients
-dynamodb = boto3.resource("dynamodb")
+# Lazy-loaded AWS clients (avoid import-time initialization for testability)
+_resources: dict = {}
+
+
+def _get_dynamodb_resource():
+    """Get or create DynamoDB resource."""
+    if "dynamodb" not in _resources:
+        _resources["dynamodb"] = boto3.resource("dynamodb")
+    return _resources["dynamodb"]
 
 
 def scan_all_items(table) -> list[dict]:
@@ -78,7 +85,7 @@ def handler(event, context):  # noqa: ARG001
 
     try:
         # Scan staging table for all discovered events
-        table = dynamodb.Table(staging_table_name)
+        table = _get_dynamodb_resource().Table(staging_table_name)
         all_items = scan_all_items(table)
 
         logger.info(f"Scanned {len(all_items)} items from staging table")

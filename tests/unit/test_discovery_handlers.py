@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 class TestLoadConfigHandler:
     """Tests for load_config Lambda handler."""
 
-    @patch("src.lambda_handlers.discovery.load_config.secretsmanager_client")
-    @patch("src.lambda_handlers.discovery.load_config.s3_client")
+    @patch("src.lambda_handlers.discovery.load_config._get_secretsmanager_client")
+    @patch("src.lambda_handlers.discovery.load_config._get_s3_client")
     @patch("src.lambda_handlers.discovery.load_config.get_tour_config")
     @patch.dict(
         "os.environ",
@@ -19,10 +19,14 @@ class TestLoadConfigHandler:
         },
     )
     def test_load_config_returns_riders_and_stages(
-        self, mock_get_tour_config, mock_s3, mock_secrets
+        self, mock_get_tour_config, mock_get_s3, mock_get_secrets
     ):
         """Test that load_config returns riders and stages."""
         from src.lambda_handlers.discovery.load_config import handler
+
+        # Mock S3 client
+        mock_s3 = MagicMock()
+        mock_get_s3.return_value = mock_s3
 
         # Mock riders data
         riders_data = {
@@ -36,7 +40,9 @@ class TestLoadConfigHandler:
             "Body": MagicMock(read=lambda: json.dumps(riders_data).encode())
         }
 
-        # Mock secrets
+        # Mock secrets client
+        mock_secrets = MagicMock()
+        mock_get_secrets.return_value = mock_secrets
         mock_secrets.get_secret_value.return_value = {
             "SecretString": json.dumps({"username": "test", "password": "pass"})
         }
@@ -70,14 +76,18 @@ class TestLoadConfigHandler:
         assert result["credentials"]["username"] == "test"
         assert result["credentials"]["password"] == "pass"
 
-    @patch("src.lambda_handlers.discovery.load_config.s3_client")
+    @patch("src.lambda_handlers.discovery.load_config._get_s3_client")
     @patch("src.lambda_handlers.discovery.load_config.get_tour_config")
     @patch.dict("os.environ", {"DATA_BUCKET": "test-bucket"})
     def test_load_config_returns_empty_when_no_active_stages(
-        self, mock_get_tour_config, mock_s3
+        self, mock_get_tour_config, mock_get_s3
     ):
         """Test that load_config returns empty arrays when no active stages."""
         from src.lambda_handlers.discovery.load_config import handler
+
+        # Mock S3 client
+        mock_s3 = MagicMock()
+        mock_get_s3.return_value = mock_s3
 
         # Mock riders data
         riders_data = {"riders": [{"name": "Rider", "zwiftpower_id": "123"}]}
@@ -99,13 +109,16 @@ class TestLoadConfigHandler:
 class TestAggregateEventsHandler:
     """Tests for aggregate_events Lambda handler."""
 
-    @patch("src.lambda_handlers.discovery.aggregate_events.dynamodb")
+    @patch("src.lambda_handlers.discovery.aggregate_events._get_dynamodb_resource")
     @patch.dict("os.environ", {"STAGING_TABLE": "test-staging-table"})
-    def test_aggregate_events_deduplicates(self, mock_dynamodb):
+    def test_aggregate_events_deduplicates(self, mock_get_dynamodb):
         """Test that aggregate_events deduplicates by event_id."""
         from src.lambda_handlers.discovery.aggregate_events import handler
 
-        # Mock DynamoDB table scan
+        # Mock DynamoDB resource and table
+        mock_dynamodb = MagicMock()
+        mock_get_dynamodb.return_value = mock_dynamodb
+
         mock_table = MagicMock()
         mock_table.scan.return_value = {
             "Items": [
@@ -147,15 +160,17 @@ class TestAggregateEventsHandler:
         assert result["total_unique"] == 2
         assert len(result["unique_events"]) == 2
 
-    @patch("src.lambda_handlers.discovery.aggregate_events.dynamodb")
+    @patch("src.lambda_handlers.discovery.aggregate_events._get_dynamodb_resource")
     @patch.dict("os.environ", {"STAGING_TABLE": "test-staging-table"})
-    def test_aggregate_events_handles_pagination(self, mock_dynamodb):
+    def test_aggregate_events_handles_pagination(self, mock_get_dynamodb):
         """Test that aggregate_events handles DynamoDB pagination."""
         from src.lambda_handlers.discovery.aggregate_events import handler
 
-        # Mock DynamoDB table with pagination
-        mock_table = MagicMock()
+        # Mock DynamoDB resource and table with pagination
+        mock_dynamodb = MagicMock()
+        mock_get_dynamodb.return_value = mock_dynamodb
 
+        mock_table = MagicMock()
         first_response = {
             "Items": [{"event_id": "1", "discovered_by": "rider:1", "timestamp": 1000}],
             "LastEvaluatedKey": {"event_id": "1"},
@@ -182,8 +197,10 @@ class TestAggregateEventsHandler:
 class TestDiscoverRiderEventsHandler:
     """Tests for discover_rider_events Lambda handler."""
 
-    @patch("src.lambda_handlers.discovery.discover_rider_events.dynamodb")
-    @patch("src.lambda_handlers.discovery.discover_rider_events.secretsmanager_client")
+    @patch("src.lambda_handlers.discovery.discover_rider_events._get_dynamodb_resource")
+    @patch(
+        "src.lambda_handlers.discovery.discover_rider_events._get_secretsmanager_client"
+    )
     @patch("src.lambda_handlers.discovery.discover_rider_events.ZwiftPowerClient")
     @patch.dict(
         "os.environ",
@@ -193,12 +210,14 @@ class TestDiscoverRiderEventsHandler:
         },
     )
     def test_discover_rider_events_filters_tdz_events(
-        self, mock_client_class, mock_secrets, mock_dynamodb
+        self, mock_client_class, mock_get_secrets, mock_get_dynamodb
     ):
         """Test that discover_rider_events filters for TDZ events."""
         from src.lambda_handlers.discovery.discover_rider_events import handler
 
-        # Mock secrets
+        # Mock secrets client
+        mock_secrets = MagicMock()
+        mock_get_secrets.return_value = mock_secrets
         mock_secrets.get_secret_value.return_value = {
             "SecretString": json.dumps({"username": "test", "password": "pass"})
         }
@@ -228,7 +247,10 @@ class TestDiscoverRiderEventsHandler:
         }
         mock_client_class.return_value = mock_client
 
-        # Mock DynamoDB
+        # Mock DynamoDB resource and table
+        mock_dynamodb = MagicMock()
+        mock_get_dynamodb.return_value = mock_dynamodb
+
         mock_table = MagicMock()
         mock_batch_writer = MagicMock()
         mock_table.batch_writer.return_value.__enter__ = MagicMock(
@@ -281,8 +303,10 @@ class TestDiscoverRiderEventsHandler:
 class TestFetchEventResultsHandler:
     """Tests for fetch_event_results Lambda handler."""
 
-    @patch("src.lambda_handlers.discovery.fetch_event_results.s3_client")
-    @patch("src.lambda_handlers.discovery.fetch_event_results.secretsmanager_client")
+    @patch("src.lambda_handlers.discovery.fetch_event_results._get_s3_client")
+    @patch(
+        "src.lambda_handlers.discovery.fetch_event_results._get_secretsmanager_client"
+    )
     @patch("src.lambda_handlers.discovery.fetch_event_results.ZwiftPowerClient")
     @patch.dict(
         "os.environ",
@@ -292,15 +316,21 @@ class TestFetchEventResultsHandler:
         },
     )
     def test_fetch_event_results_stores_in_s3(
-        self, mock_client_class, mock_secrets, mock_s3
+        self, mock_client_class, mock_get_secrets, mock_get_s3
     ):
         """Test that fetch_event_results stores results in S3."""
         from src.lambda_handlers.discovery.fetch_event_results import handler
 
-        # Mock secrets
+        # Mock secrets client
+        mock_secrets = MagicMock()
+        mock_get_secrets.return_value = mock_secrets
         mock_secrets.get_secret_value.return_value = {
             "SecretString": json.dumps({"username": "test", "password": "pass"})
         }
+
+        # Mock S3 client
+        mock_s3 = MagicMock()
+        mock_get_s3.return_value = mock_s3
 
         # Mock ZwiftPower client
         mock_client = MagicMock()
@@ -356,9 +386,9 @@ class TestFetchEventResultsHandler:
 class TestMergeAndProcessHandler:
     """Tests for merge_and_process Lambda handler."""
 
-    @patch("src.lambda_handlers.discovery.merge_and_process.lambda_client")
-    @patch("src.lambda_handlers.discovery.merge_and_process.s3_client")
-    @patch("src.lambda_handlers.discovery.merge_and_process.secretsmanager_client")
+    @patch("src.lambda_handlers.discovery.merge_and_process._get_lambda_client")
+    @patch("src.lambda_handlers.discovery.merge_and_process._get_s3_client")
+    @patch("src.lambda_handlers.discovery.merge_and_process._get_secretsmanager_client")
     @patch("src.lambda_handlers.discovery.merge_and_process.RawEventStore")
     @patch("src.lambda_handlers.discovery.merge_and_process.get_tour_config")
     @patch("src.lambda_handlers.discovery.merge_and_process.load_riders_from_s3")
@@ -375,14 +405,16 @@ class TestMergeAndProcessHandler:
         mock_load_riders,
         mock_get_tour_config,
         mock_raw_store_class,
-        mock_secrets,
-        _mock_s3,
-        _mock_lambda,
+        mock_get_secrets,
+        _mock_get_s3,
+        _mock_get_lambda,
     ):
         """Test that merge_and_process merges events to persistent store."""
         from src.lambda_handlers.discovery.merge_and_process import handler
 
-        # Mock secrets
+        # Mock secrets client
+        mock_secrets = MagicMock()
+        mock_get_secrets.return_value = mock_secrets
         mock_secrets.get_secret_value.return_value = {
             "SecretString": json.dumps({"username": "test", "password": "pass"})
         }

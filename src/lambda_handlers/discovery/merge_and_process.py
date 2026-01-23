@@ -18,10 +18,29 @@ from src.processor import process_stage_results
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# AWS clients
-s3_client = boto3.client("s3")
-lambda_client = boto3.client("lambda")
-secretsmanager_client = boto3.client("secretsmanager")
+# Lazy-loaded AWS clients (avoid import-time initialization for testability)
+_clients: dict = {}
+
+
+def _get_s3_client():
+    """Get or create S3 client."""
+    if "s3" not in _clients:
+        _clients["s3"] = boto3.client("s3")
+    return _clients["s3"]
+
+
+def _get_lambda_client():
+    """Get or create Lambda client."""
+    if "lambda" not in _clients:
+        _clients["lambda"] = boto3.client("lambda")
+    return _clients["lambda"]
+
+
+def _get_secretsmanager_client():
+    """Get or create Secrets Manager client."""
+    if "secretsmanager" not in _clients:
+        _clients["secretsmanager"] = boto3.client("secretsmanager")
+    return _clients["secretsmanager"]
 
 
 def get_zwiftpower_credentials() -> tuple[str, str]:
@@ -30,7 +49,7 @@ def get_zwiftpower_credentials() -> tuple[str, str]:
     if not secret_arn:
         raise ValueError("ZWIFTPOWER_SECRET_ARN not configured")
 
-    response = secretsmanager_client.get_secret_value(SecretId=secret_arn)
+    response = _get_secretsmanager_client().get_secret_value(SecretId=secret_arn)
     secret = json.loads(response["SecretString"])
 
     return secret.get("username", ""), secret.get("password", "")
@@ -39,7 +58,7 @@ def get_zwiftpower_credentials() -> tuple[str, str]:
 def load_riders_from_s3(bucket: str, key: str = "config/riders.json") -> RiderRegistry:
     """Load rider registry from S3."""
     try:
-        response = s3_client.get_object(Bucket=bucket, Key=key)
+        response = _get_s3_client().get_object(Bucket=bucket, Key=key)
         data = json.loads(response["Body"].read().decode("utf-8"))
         return RiderRegistry.model_validate(data)
     except ClientError as e:
@@ -60,7 +79,7 @@ def save_results_to_s3(
     key = f"results/{tour_id}/stage_{stage}_group_{group}.json"
     data = [r.model_dump(mode="json") for r in results]
 
-    s3_client.put_object(
+    _get_s3_client().put_object(
         Bucket=bucket,
         Key=key,
         Body=json.dumps(data, indent=2, default=str),
@@ -80,7 +99,7 @@ def invoke_processor_lambda():
         return None
 
     try:
-        response = lambda_client.invoke(
+        response = _get_lambda_client().invoke(
             FunctionName=processor_arn,
             InvocationType="Event",  # Async invocation
             Payload=json.dumps({"source": "discovery_pipeline"}),

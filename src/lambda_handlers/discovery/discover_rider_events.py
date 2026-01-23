@@ -13,9 +13,24 @@ from src.fetcher.client import ZwiftPowerClient
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# AWS clients
-dynamodb = boto3.resource("dynamodb")
-secretsmanager_client = boto3.client("secretsmanager")
+# Lazy-loaded AWS clients (avoid import-time initialization for testability)
+_clients: dict = {}
+_resources: dict = {}
+
+
+def _get_dynamodb_resource():
+    """Get or create DynamoDB resource."""
+    if "dynamodb" not in _resources:
+        _resources["dynamodb"] = boto3.resource("dynamodb")
+    return _resources["dynamodb"]
+
+
+def _get_secretsmanager_client():
+    """Get or create Secrets Manager client."""
+    if "secretsmanager" not in _clients:
+        _clients["secretsmanager"] = boto3.client("secretsmanager")
+    return _clients["secretsmanager"]
+
 
 # TTL for staging table entries (7 days in seconds)
 STAGING_TTL_SECONDS = 7 * 24 * 60 * 60
@@ -27,7 +42,7 @@ def get_zwiftpower_credentials() -> tuple[str, str]:
     if not secret_arn:
         raise ValueError("ZWIFTPOWER_SECRET_ARN not configured")
 
-    response = secretsmanager_client.get_secret_value(SecretId=secret_arn)
+    response = _get_secretsmanager_client().get_secret_value(SecretId=secret_arn)
     secret = json.loads(response["SecretString"])
 
     return secret.get("username", ""), secret.get("password", "")
@@ -96,7 +111,7 @@ def write_to_staging(table_name: str, events: list[dict]) -> int:
     if not events:
         return 0
 
-    table = dynamodb.Table(table_name)
+    table = _get_dynamodb_resource().Table(table_name)
     ttl = int(time.time()) + STAGING_TTL_SECONDS
 
     with table.batch_writer() as batch:

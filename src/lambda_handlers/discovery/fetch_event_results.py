@@ -12,9 +12,22 @@ from src.fetcher.events import get_event_details
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# AWS clients
-s3_client = boto3.client("s3")
-secretsmanager_client = boto3.client("secretsmanager")
+# Lazy-loaded AWS clients (avoid import-time initialization for testability)
+_clients: dict = {}
+
+
+def _get_s3_client():
+    """Get or create S3 client."""
+    if "s3" not in _clients:
+        _clients["s3"] = boto3.client("s3")
+    return _clients["s3"]
+
+
+def _get_secretsmanager_client():
+    """Get or create Secrets Manager client."""
+    if "secretsmanager" not in _clients:
+        _clients["secretsmanager"] = boto3.client("secretsmanager")
+    return _clients["secretsmanager"]
 
 
 def get_zwiftpower_credentials() -> tuple[str, str]:
@@ -23,7 +36,7 @@ def get_zwiftpower_credentials() -> tuple[str, str]:
     if not secret_arn:
         raise ValueError("ZWIFTPOWER_SECRET_ARN not configured")
 
-    response = secretsmanager_client.get_secret_value(SecretId=secret_arn)
+    response = _get_secretsmanager_client().get_secret_value(SecretId=secret_arn)
     secret = json.loads(response["SecretString"])
 
     return secret.get("username", ""), secret.get("password", "")
@@ -96,7 +109,7 @@ def handler(event, context):
             "results": results,
         }
 
-        s3_client.put_object(
+        _get_s3_client().put_object(
             Bucket=data_bucket,
             Key=s3_key,
             Body=json.dumps(result_data, indent=2, default=str),
