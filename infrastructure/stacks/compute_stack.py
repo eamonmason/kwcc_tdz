@@ -57,7 +57,8 @@ class ComputeStack(Stack):
 
         # Lambda layer for dependencies
         # Use x86_64 architecture to match the bundling platform
-        dependencies_layer = lambda_.LayerVersion(
+        # Exposed as property for sharing with other stacks
+        self.dependencies_layer = lambda_.LayerVersion(
             self,
             "DependenciesLayer",
             code=lambda_.Code.from_asset(
@@ -99,7 +100,7 @@ class ComputeStack(Stack):
                     ],
                 },
             ),
-            layers=[dependencies_layer],
+            layers=[self.dependencies_layer],
             timeout=Duration.minutes(2),
             memory_size=256,
             environment={
@@ -136,7 +137,7 @@ class ComputeStack(Stack):
             architecture=lambda_.Architecture.X86_64,
             handler="src.lambda_handlers.data_fetcher.handler",
             code=lambda_.Code.from_asset("../src"),
-            layers=[dependencies_layer],
+            layers=[self.dependencies_layer],
             timeout=Duration.minutes(5),
             memory_size=512,
             environment={

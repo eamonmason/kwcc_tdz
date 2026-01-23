@@ -7,6 +7,7 @@ import aws_cdk as cdk
 from stacks.certificate_stack import CertificateStack
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
+from stacks.discovery_stack import DiscoveryStack
 from stacks.github_actions_stack import GitHubActionsStack
 
 app = cdk.App()
@@ -94,5 +95,18 @@ compute_stack = ComputeStack(
     enable_schedule=enable_schedule,
 )
 compute_stack.add_dependency(data_stack)
+
+# 4. Discovery stack - Step Functions pipeline for distributed event discovery
+discovery_stack = DiscoveryStack(
+    app,
+    f"KwccTdz{environment.capitalize()}DiscoveryStack",
+    env=env_eu,
+    data_bucket=data_stack.data_bucket,
+    zwiftpower_secret=data_stack.zwiftpower_secret,
+    processor_lambda=compute_stack.results_processor,
+    dependencies_layer=compute_stack.dependencies_layer,
+    environment=environment,
+)
+discovery_stack.add_dependency(compute_stack)
 
 app.synth()

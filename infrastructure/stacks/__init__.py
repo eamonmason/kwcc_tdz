@@ -4,6 +4,7 @@ from stacks.cdn_stack import CdnStack
 from stacks.certificate_stack import CertificateStack
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
+from stacks.discovery_stack import DiscoveryStack
 from stacks.github_actions_stack import GitHubActionsStack
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "CertificateStack",
     "ComputeStack",
     "DataStack",
+    "DiscoveryStack",
     "GitHubActionsStack",
 ]
