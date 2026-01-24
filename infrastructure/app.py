@@ -4,6 +4,7 @@
 import os
 
 import aws_cdk as cdk
+from stacks.batch_discovery_stack import BatchDiscoveryStack
 from stacks.certificate_stack import CertificateStack
 from stacks.compute_stack import ComputeStack
 from stacks.data_stack import DataStack
@@ -97,6 +98,7 @@ compute_stack = ComputeStack(
 compute_stack.add_dependency(data_stack)
 
 # 4. Discovery stack - Step Functions pipeline for distributed event discovery
+# NOTE: This is being replaced by BatchDiscoveryStack. Both coexist during migration.
 discovery_stack = DiscoveryStack(
     app,
     f"KwccTdz{environment.capitalize()}DiscoveryStack",
@@ -108,5 +110,23 @@ discovery_stack = DiscoveryStack(
     env_name=environment,
 )
 discovery_stack.add_dependency(compute_stack)
+
+# 5. Batch Discovery stack - Simplified single Lambda replacement for Step Functions
+# This stack provides the same functionality with lower cost and complexity:
+# - Single Lambda vs 6 Lambdas + Step Functions state machine
+# - S3 checkpointing for incremental progress (no DynamoDB)
+# - ~70% cost reduction
+batch_discovery_stack = BatchDiscoveryStack(
+    app,
+    f"KwccTdz{environment.capitalize()}BatchDiscoveryStack",
+    env=env_eu,
+    data_bucket=data_stack.data_bucket,
+    zwiftpower_secret=data_stack.zwiftpower_secret,
+    processor_lambda=compute_stack.results_processor,
+    dependencies_layer=compute_stack.dependencies_layer,
+    env_name=environment,
+    enable_schedule=enable_schedule,
+)
+batch_discovery_stack.add_dependency(compute_stack)
 
 app.synth()
