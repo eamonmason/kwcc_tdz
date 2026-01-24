@@ -391,6 +391,19 @@ def handler(event, context):
 
         logger.info(f"Processing {len(stages_to_process)} stage(s): {stage_numbers}")
 
+        # Check if checkpoint stage_numbers match requested stages
+        # If different (e.g., stage_override changed), start fresh
+        if checkpoint.stage_numbers and set(checkpoint.stage_numbers) != set(
+            stage_numbers
+        ):
+            logger.info(
+                f"Checkpoint stages {checkpoint.stage_numbers} don't match "
+                f"requested stages {stage_numbers}, starting fresh"
+            )
+            checkpoint_mgr.clear()
+            checkpoint = DiscoveryCheckpoint()
+            checkpoint.increment_run_count()
+
         # Initialize checkpoint with stage info if not already set
         if not checkpoint.stage_numbers:
             checkpoint.stage_numbers = stage_numbers
