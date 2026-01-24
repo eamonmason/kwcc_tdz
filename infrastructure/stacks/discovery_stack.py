@@ -28,18 +28,18 @@ class DiscoveryStack(Stack):
         zwiftpower_secret: secretsmanager.ISecret,
         processor_lambda: lambda_.IFunction,
         dependencies_layer: lambda_.ILayerVersion,
-        environment: str = "prod",
+        env_name: str = "prod",
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.environment = environment
+        self._env_name = env_name
 
         # 1. DynamoDB staging table for discovered events
         self.staging_table = dynamodb.Table(
             self,
             "DiscoveredEventsStaging",
-            table_name=f"kwcc-tdz-discovered-events-{environment}",
+            table_name=f"kwcc-tdz-discovered-events-{env_name}",
             partition_key=dynamodb.Attribute(
                 name="event_id", type=dynamodb.AttributeType.STRING
             ),
@@ -63,7 +63,7 @@ class DiscoveryStack(Stack):
         self.load_config_lambda = lambda_.Function(
             self,
             "LoadConfigFunction",
-            function_name=f"kwcc-tdz-discovery-load-config-{environment}",
+            function_name=f"kwcc-tdz-discovery-load-config-{env_name}",
             handler="src.lambda_handlers.discovery.load_config.handler",
             code=lambda_.Code.from_asset("../src"),
             timeout=Duration.seconds(30),
@@ -81,7 +81,7 @@ class DiscoveryStack(Stack):
         self.discover_rider_lambda = lambda_.Function(
             self,
             "DiscoverRiderFunction",
-            function_name=f"kwcc-tdz-discovery-rider-events-{environment}",
+            function_name=f"kwcc-tdz-discovery-rider-events-{env_name}",
             handler="src.lambda_handlers.discovery.discover_rider_events.handler",
             code=lambda_.Code.from_asset("../src"),
             timeout=Duration.seconds(60),  # Per-rider timeout
@@ -99,7 +99,7 @@ class DiscoveryStack(Stack):
         self.aggregate_lambda = lambda_.Function(
             self,
             "AggregateEventsFunction",
-            function_name=f"kwcc-tdz-discovery-aggregate-{environment}",
+            function_name=f"kwcc-tdz-discovery-aggregate-{env_name}",
             handler="src.lambda_handlers.discovery.aggregate_events.handler",
             code=lambda_.Code.from_asset("../src"),
             timeout=Duration.seconds(60),
@@ -115,7 +115,7 @@ class DiscoveryStack(Stack):
         self.fetch_event_lambda = lambda_.Function(
             self,
             "FetchEventFunction",
-            function_name=f"kwcc-tdz-discovery-fetch-event-{environment}",
+            function_name=f"kwcc-tdz-discovery-fetch-event-{env_name}",
             handler="src.lambda_handlers.discovery.fetch_event_results.handler",
             code=lambda_.Code.from_asset("../src"),
             timeout=Duration.seconds(120),  # Per-event timeout
@@ -133,7 +133,7 @@ class DiscoveryStack(Stack):
         self.merge_process_lambda = lambda_.Function(
             self,
             "MergeProcessFunction",
-            function_name=f"kwcc-tdz-discovery-merge-process-{environment}",
+            function_name=f"kwcc-tdz-discovery-merge-process-{env_name}",
             handler="src.lambda_handlers.discovery.merge_and_process.handler",
             code=lambda_.Code.from_asset("../src"),
             timeout=Duration.minutes(5),
@@ -267,7 +267,7 @@ class DiscoveryStack(Stack):
         return sfn.StateMachine(
             self,
             "DiscoveryPipeline",
-            state_machine_name=f"kwcc-tdz-discovery-pipeline-{self.environment}",
+            state_machine_name=f"kwcc-tdz-discovery-pipeline-{self._env_name}",
             definition_body=sfn.DefinitionBody.from_chainable(definition),
             timeout=Duration.minutes(30),
             tracing_enabled=True,

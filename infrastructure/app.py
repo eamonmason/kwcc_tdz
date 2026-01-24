@@ -105,7 +105,7 @@ discovery_stack = DiscoveryStack(
     zwiftpower_secret=data_stack.zwiftpower_secret,
     processor_lambda=compute_stack.results_processor,
     dependencies_layer=compute_stack.dependencies_layer,
-    environment=environment,
+    env_name=environment,
 )
 discovery_stack.add_dependency(compute_stack)
 
