@@ -366,6 +366,13 @@ def find_tdz_race_events_with_timestamps(
     else:
         patterns = [f"stage {stage_number}"]
 
+    # Debug logging: Count race vs non-race events in input
+    race_event_count = sum(1 for e in events if "race" in e.get("name", "").lower())
+    logger.info(
+        f"Filtering {len(events)} events ({race_event_count} are race events) "
+        f"for Stage {stage_number} using patterns: {patterns}"
+    )
+
     start_ts = datetime.combine(start_date, datetime.min.time()).timestamp()
     end_ts = datetime.combine(end_date, datetime.max.time()).timestamp()
 
@@ -408,6 +415,19 @@ def find_tdz_race_events_with_timestamps(
     # Sort by score descending
     scored_events.sort(key=lambda x: x[1], reverse=True)
 
+    # Debug logging: Log scored events summary
+    race_scored = [
+        (e, s) for e, s in scored_events if "race" in e.get("name", "").lower()
+    ]
+    logger.info(
+        f"Scored {len(scored_events)} candidate events "
+        f"({len(race_scored)} are race events)"
+    )
+    for event, score in race_scored[:10]:  # Log first 10 race events
+        logger.info(
+            f"  Scored race event: {event['id']} (score={score}) - {event['name']}"
+        )
+
     # Get unique event IDs with timestamps
     seen_ids = set()
     for event, _score in scored_events:
@@ -443,6 +463,24 @@ def find_tdz_race_events_with_timestamps(
         raise ZwiftPowerEventNotFoundError(
             f"No TdZ events found for Stage {stage_number}"
         )
+
+    # Debug logging: Final selection with race event breakdown
+    final_race_events = [
+        (eid, ts)
+        for eid, ts in events_with_timestamps
+        if any(
+            "race" in e.get("name", "").lower() for e in events if e.get("id") == eid
+        )
+    ]
+    logger.info(
+        f"Final selection for Stage {stage_number}: {len(events_with_timestamps)} events "
+        f"({len(final_race_events)} are race events)"
+    )
+    for eid, _ts in final_race_events[:10]:  # Log first 10 race events
+        event_name = next(
+            (e.get("name", "") for e in events if e.get("id") == eid), "unknown"
+        )
+        logger.info(f"  Final race event: {eid} - {event_name}")
 
     logger.info(
         f"Found {len(events_with_timestamps)} event IDs for Stage {stage_number}"
@@ -501,6 +539,8 @@ def get_event_details(
     # Look for route and distance info
     route = ""
     distance = ""
+
+    # Method 1: Look in event-details div
     details = soup.find("div", class_="event-details")
     if details:
         text = details.get_text()
@@ -511,6 +551,90 @@ def get_event_details(
         if dist_match:
             distance = dist_match.group(0)
 
+    # Method 2: Search entire page for route patterns if not found
+    if not route:
+        page_text = soup.get_text()
+
+        # Try different route patterns
+        route_patterns = [
+            r"Route:\s*(.+?)(?:\n|km|$)",  # "Route: Name" followed by newline, km, or end
+            r"route[\"']?\s*:\s*[\"']?([^\"'\n,]+)",  # route: "Name" or route: Name
+            r"Course:\s*(.+?)(?:\n|km|$)",  # "Course: Name"
+        ]
+
+        for pattern in route_patterns:
+            match = re.search(pattern, page_text, re.IGNORECASE)
+            if match:
+                route_text = match.group(1).strip()
+                # Clean up the route text
+                route_text = re.sub(r"\s+", " ", route_text)  # Collapse whitespace
+                route_text = route_text.rstrip(".")
+                if route_text and len(route_text) < 100:  # Sanity check
+                    route = route_text
+                    break
+
+    # Method 3: Look for route in links (ZwiftPower often has route links)
+    if not route:
+        route_link = soup.find("a", href=re.compile(r"zwiftinsider\.com/route/"))
+        if route_link:
+            route_text = route_link.get_text(strip=True)
+            if route_text:
+                route = route_text
+
+    # Method 4: Look for route in specific table cells or info boxes
+    if not route:
+        for td in soup.find_all("td"):
+            text = td.get_text(strip=True)
+            if text.startswith("Route:"):
+                route = text[6:].strip()
+                break
+
+    # Method 5: Search for known Zwift route names directly in the page
+    # This is a fallback when structured extraction fails
+    if not route:
+        page_text = soup.get_text()
+        # Known Zwift route names (add more as needed)
+        known_routes = [
+            "Turf N Surf",
+            "Jungle Circuit",
+            "Big Foot Hills",
+            "Tick Tock",
+            "Legends and Lava",
+            "Triple Flat Loops",
+            "Watopia's Waistband",
+            "Sand And Sequoias",
+            "Richmond UCI Worlds",
+            "Downtown Titans",
+            "Lady Liberty",
+            "Four Horsemen",
+            "Mega Pretzel",
+            "The Pretzel",
+            "Volcano Circuit",
+            "Hilly Route",
+            "Mountain Route",
+            "Flat Route",
+            "Downtown Dolphin",
+            "Sleepless City",
+            "Cobbled Climbs",
+            "Keith Hill",
+            "Libby Hill",
+            "Crit City",
+            "Tempus Fugit",
+            "Tick Tock",
+            "Greater London Loop",
+            "Greatest London Loop",
+            "London Loop",
+            "Tour of Watopia",
+        ]
+        for known in known_routes:
+            if known.lower() in page_text.lower():
+                route = known
+                logger.info(
+                    f"Event {event_id}: Found route '{known}' via direct text search"
+                )
+                break
+
+    logger.info(f"Event {event_id} details: route='{route}', title='{title}'")
     return {
         "id": event_id,
         "title": title,

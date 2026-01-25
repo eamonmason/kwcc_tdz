@@ -44,7 +44,6 @@ class BatchDiscoveryStack(Stack):
         data_bucket: s3.IBucket,
         zwiftpower_secret: secretsmanager.ISecret,
         processor_lambda: lambda_.IFunction,
-        dependencies_layer: lambda_.ILayerVersion,
         env_name: str = "prod",
         enable_schedule: bool = True,
         **kwargs,
@@ -52,6 +51,29 @@ class BatchDiscoveryStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         self._env_name = env_name
+
+        # Create own dependencies layer (no cross-stack reference)
+        # This eliminates CloudFormation export conflicts when the layer changes
+        self._dependencies_layer = lambda_.LayerVersion(
+            self,
+            "BatchDiscoveryDependenciesLayer",
+            code=lambda_.Code.from_asset(
+                "../",
+                bundling={
+                    "image": lambda_.Runtime.PYTHON_3_12.bundling_image,
+                    "platform": "linux/amd64",
+                    "command": [
+                        "bash",
+                        "-c",
+                        "pip install -r requirements-lambda.txt -t /asset-output/python "
+                        "--platform manylinux2014_x86_64 --only-binary=:all:",
+                    ],
+                },
+            ),
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_12],
+            compatible_architectures=[lambda_.Architecture.X86_64],
+            description="KWCC TdZ Batch Discovery dependencies",
+        )
 
         # Batch Discovery Lambda
         # 15-minute timeout allows for significant processing per invocation
@@ -75,7 +97,7 @@ class BatchDiscoveryStack(Stack):
                     ],
                 },
             ),
-            layers=[dependencies_layer],
+            layers=[self._dependencies_layer],
             timeout=Duration.minutes(15),
             memory_size=1024,
             environment={

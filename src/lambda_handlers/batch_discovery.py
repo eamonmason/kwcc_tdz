@@ -207,7 +207,17 @@ def process_and_generate_website(
             for event_id, event_data in merged.items()
         ]
 
+        # Debug logging: Log race events in raw store
+        logger.info(f"Events in raw store for filtering: {len(events_list)}")
+        race_events_in_store = [
+            e for e in events_list if "race" in e.get("name", "").lower()
+        ]
+        logger.info(f"Race events in raw store: {len(race_events_in_store)}")
+        for e in race_events_in_store[:10]:  # Log first 10
+            logger.info(f"  Race event in store: {e['id']} - {e['name']}")
+
         stage_route = current_stage.courses[0].route if current_stage.courses else ""
+        logger.info(f"Stage {current_stage.number} expected route: '{stage_route}'")
 
         try:
             with ZwiftPowerClient(username, password) as client:
@@ -235,6 +245,22 @@ def process_and_generate_website(
                     if event_dt and event_id not in event_timestamps:
                         event_timestamps[event_id] = event_dt
 
+                # Debug logging: Log selected events and which are race events
+                logger.info(
+                    f"Events selected for Stage {current_stage.number}: "
+                    f"{len(stage_event_ids)}"
+                )
+                race_event_ids_in_store = {e["id"] for e in race_events_in_store}
+                race_events_selected = [
+                    eid for eid in stage_event_ids if eid in race_event_ids_in_store
+                ]
+                logger.info(f"Race events selected: {len(race_events_selected)}")
+                for eid in race_events_selected[:10]:  # Log first 10
+                    event_name = next(
+                        (e["name"] for e in events_list if e["id"] == eid), "unknown"
+                    )
+                    logger.info(f"  Race event selected: {eid} - {event_name}")
+
                 logger.info(
                     f"Found {len(stage_event_ids)} events for Stage {current_stage.number}"
                 )
@@ -254,6 +280,7 @@ def process_and_generate_website(
                     event_timestamps,
                     event_names,
                     category_filter,
+                    expected_route=stage_route,
                 )
 
             if not race_results:
@@ -390,6 +417,10 @@ def handler(event, context):
         stage_numbers = [s.number for s in stages_to_process]
 
         logger.info(f"Processing {len(stages_to_process)} stage(s): {stage_numbers}")
+        logger.info(
+            f"Checkpoint state: phase={checkpoint.phase}, "
+            f"stage_numbers={checkpoint.stage_numbers}"
+        )
 
         # Check if checkpoint stage_numbers match requested stages
         # If different (e.g., stage_override changed), start fresh

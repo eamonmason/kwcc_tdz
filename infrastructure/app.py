@@ -116,6 +116,8 @@ discovery_stack.add_dependency(compute_stack)
 # - Single Lambda vs 6 Lambdas + Step Functions state machine
 # - S3 checkpointing for incremental progress (no DynamoDB)
 # - ~70% cost reduction
+# NOTE: This stack creates its own dependencies layer to avoid cross-stack
+# CloudFormation export conflicts when the layer changes.
 batch_discovery_stack = BatchDiscoveryStack(
     app,
     f"KwccTdz{environment.capitalize()}BatchDiscoveryStack",
@@ -123,7 +125,6 @@ batch_discovery_stack = BatchDiscoveryStack(
     data_bucket=data_stack.data_bucket,
     zwiftpower_secret=data_stack.zwiftpower_secret,
     processor_lambda=compute_stack.results_processor,
-    dependencies_layer=compute_stack.dependencies_layer,
     env_name=environment,
     enable_schedule=enable_schedule,
 )

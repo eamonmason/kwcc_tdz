@@ -263,6 +263,9 @@ def process_single_stage(
         category_filter = (
             current_stage.courses[0].option_letter if current_stage.courses else None
         )
+        expected_route = (
+            current_stage.courses[0].route if current_stage.courses else None
+        )
 
         race_results = fetch_stage_results(
             client,
@@ -272,6 +275,7 @@ def process_single_stage(
             event_timestamps,
             event_names,
             category_filter,
+            expected_route=expected_route,
         )
 
     logger.info(f"Fetched {len(race_results)} results for Stage {current_stage.number}")

@@ -263,6 +263,7 @@ def handler(event, context):  # noqa: ARG001
                         event_timestamps,
                         event_names,
                         category_filter,
+                        expected_route=stage_route,
                     )
 
                 if not race_results:

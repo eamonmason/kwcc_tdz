@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 
 from src.fetcher.client import ZwiftPowerClient
+from src.fetcher.events import get_event_details
 from src.models.result import RaceResult, parse_time
 from src.models.rider import RiderRegistry
 
@@ -257,15 +258,30 @@ def _filter_by_category(
 ) -> list[RaceResult]:
     """Filter results to only include riders who rode a specific route category."""
     filtered_results = []
+    excluded_by_category: dict[str, list[str]] = {}  # category -> list of rider names
 
     for result in results:
         if result.category == category:
             filtered_results.append(result)
+        else:
+            cat = result.category or "unknown"
+            if cat not in excluded_by_category:
+                excluded_by_category[cat] = []
+            excluded_by_category[cat].append(f"{result.rider_name} ({result.rider_id})")
 
     logger.info(
         f"Filtered to {len(filtered_results)} riders in category {category} "
         f"from {len(results)} total"
     )
+
+    # Debug logging: Show category distribution of excluded riders
+    if excluded_by_category:
+        for cat, riders in sorted(excluded_by_category.items()):
+            logger.info(
+                f"  Excluded {len(riders)} riders with category '{cat}': "
+                f"{', '.join(riders[:5])}{' ...' if len(riders) > 5 else ''}"
+            )
+
     return filtered_results
 
 
@@ -295,6 +311,7 @@ def fetch_stage_results(
     event_timestamps: dict[str, datetime] | None = None,
     event_names: dict[str, str] | None = None,
     category_filter: str | None = None,
+    expected_route: str | None = None,
 ) -> list[RaceResult]:
     """
     Fetch results from multiple events for a stage.
@@ -307,13 +324,33 @@ def fetch_stage_results(
         event_timestamps: Optional dict mapping event_id to event start datetime
         event_names: Optional dict mapping event_id to event name (for race detection)
         category_filter: Optional category filter (A, B, C, D, or E) to only include riders
-                        who rode that route option
+                        who rode that route option. For group rides, this filters by route
+                        choice. For race events on the correct course, this is skipped
+                        since all riders rode the same course regardless of their race category.
+        expected_route: Optional expected route name for the stage (e.g., "Turf N Surf").
+                       Used to verify race events are on the correct course before
+                       skipping category filter.
 
     Returns:
         Combined list of all race results (may include multiple per rider).
         Best result selection should happen after penalties are applied.
     """
+    # Debug logging: Log event names dict for race detection
+    if event_names:
+        race_event_names = {k: v for k, v in event_names.items() if "race" in v.lower()}
+        logger.info(
+            f"Event names dict has {len(event_names)} entries, "
+            f"{len(race_event_names)} are race events"
+        )
+        for eid, name in list(race_event_names.items())[:10]:  # Log first 10
+            logger.info(f"  Event name for race detection: {eid} -> {name}")
+    else:
+        logger.warning("Event names dict is None - race detection may not work!")
+
     all_results: list[RaceResult] = []
+
+    # Cache for event route lookups (to avoid fetching same event twice)
+    event_routes: dict[str, str | None] = {}
 
     for event_id in event_ids:
         try:
@@ -325,6 +362,48 @@ def fetch_stage_results(
             if event_names:
                 event_name = event_names.get(event_id)
 
+            # Determine if category filter should be skipped for this event
+            # Race events: categories A-E are rider grades, all riders do same course
+            # Group ride events: categories A-E are route options (different distances)
+            #
+            # For race events, we must verify the course matches the stage's expected
+            # route before skipping category filter
+            effective_category_filter = category_filter
+            is_race_event = event_name and "race" in event_name.lower()
+
+            if is_race_event and category_filter and expected_route:
+                # Fetch event details to verify the route matches
+                if event_id not in event_routes:
+                    try:
+                        details = get_event_details(client, event_id)
+                        event_routes[event_id] = details.get("route", "")
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not fetch route for event {event_id}: {e}"
+                        )
+                        event_routes[event_id] = None
+
+                actual_route = event_routes.get(event_id)
+                if actual_route:
+                    # Case-insensitive comparison
+                    route_matches = expected_route.lower() in actual_route.lower()
+                    if route_matches:
+                        logger.info(
+                            f"Skipping category filter for race event {event_id} - "
+                            f"route '{actual_route}' matches expected '{expected_route}'"
+                        )
+                        effective_category_filter = None
+                    else:
+                        logger.info(
+                            f"Keeping category filter for race event {event_id} - "
+                            f"route '{actual_route}' does not match expected '{expected_route}'"
+                        )
+                else:
+                    logger.warning(
+                        f"Could not determine route for race event {event_id} - "
+                        f"keeping category filter (expected: {expected_route})"
+                    )
+
             results = fetch_event_results(
                 client,
                 event_id,
@@ -332,7 +411,7 @@ def fetch_stage_results(
                 rider_registry,
                 event_timestamp,
                 event_name,
-                category_filter,
+                effective_category_filter,
             )
 
             # Keep all results - best selection happens after penalties are applied
