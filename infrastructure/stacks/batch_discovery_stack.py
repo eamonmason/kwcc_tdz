@@ -56,6 +56,7 @@ class BatchDiscoveryStack(Stack):
         # Batch Discovery Lambda
         # 15-minute timeout allows for significant processing per invocation
         # Progress is saved to S3 checkpoint, so timeout is safe
+        # Bundle src/ directory so handler can import src.lambda_handlers...
         self.batch_discovery_lambda = lambda_.Function(
             self,
             "BatchDiscoveryFunction",
@@ -63,7 +64,17 @@ class BatchDiscoveryStack(Stack):
             runtime=lambda_.Runtime.PYTHON_3_12,
             architecture=lambda_.Architecture.X86_64,
             handler="src.lambda_handlers.batch_discovery.handler",
-            code=lambda_.Code.from_asset("../src"),
+            code=lambda_.Code.from_asset(
+                "../",
+                bundling={
+                    "image": lambda_.Runtime.PYTHON_3_12.bundling_image,
+                    "command": [
+                        "bash",
+                        "-c",
+                        "cp -r src /asset-output/",
+                    ],
+                },
+            ),
             layers=[dependencies_layer],
             timeout=Duration.minutes(15),
             memory_size=1024,

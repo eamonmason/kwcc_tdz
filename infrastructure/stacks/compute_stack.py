@@ -55,9 +55,11 @@ class ComputeStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Lambda layer for dependencies
+        # Lambda layer for dependencies only (not src code)
         # Use x86_64 architecture to match the bundling platform
         # Exposed as property for sharing with other stacks
+        # NOTE: src/ is NOT included - each Lambda bundles its own src/ code
+        # This allows independent deployment of Lambda code without redeploying the layer
         self.dependencies_layer = lambda_.LayerVersion(
             self,
             "DependenciesLayer",
@@ -70,8 +72,7 @@ class ComputeStack(Stack):
                         "bash",
                         "-c",
                         "pip install -r requirements-lambda.txt -t /asset-output/python "
-                        "--platform manylinux2014_x86_64 --only-binary=:all: && "
-                        "cp -r src /asset-output/python/",
+                        "--platform manylinux2014_x86_64 --only-binary=:all:",
                     ],
                 },
             ),
@@ -129,6 +130,7 @@ class ComputeStack(Stack):
             )
 
         # Data Fetcher Lambda
+        # Bundle src/ directory so handler can import src.lambda_handlers...
         self.data_fetcher = lambda_.Function(
             self,
             "DataFetcherLambda",
@@ -136,7 +138,17 @@ class ComputeStack(Stack):
             runtime=lambda_.Runtime.PYTHON_3_12,
             architecture=lambda_.Architecture.X86_64,
             handler="src.lambda_handlers.data_fetcher.handler",
-            code=lambda_.Code.from_asset("../src"),
+            code=lambda_.Code.from_asset(
+                "../",
+                bundling={
+                    "image": lambda_.Runtime.PYTHON_3_12.bundling_image,
+                    "command": [
+                        "bash",
+                        "-c",
+                        "cp -r src /asset-output/",
+                    ],
+                },
+            ),
             layers=[self.dependencies_layer],
             timeout=Duration.minutes(5),
             memory_size=512,
