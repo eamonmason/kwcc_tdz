@@ -137,7 +137,7 @@ def _fetch_results_json(
                 result = RaceResult(
                     rider_id=rider_id,
                     rider_name=rider_name,
-                    stage_number=stage_number,
+                    stage_number=str(stage_number),
                     event_id=event_id,
                     event_name=event_name or "",
                     raw_time_seconds=raw_time,
@@ -234,7 +234,7 @@ def _fetch_results_html(
             result = RaceResult(
                 rider_id=rider_id,
                 rider_name=rider_name,
-                stage_number=stage_number,
+                stage_number=str(stage_number),
                 event_id=event_id,
                 event_name=event_name or "",
                 raw_time_seconds=raw_time,
