@@ -150,7 +150,9 @@ class ComputeStack(Stack):
                 },
             ),
             layers=[self.dependencies_layer],
-            timeout=Duration.minutes(10),  # Stage 1 has 377 events to process
+            timeout=Duration.minutes(
+                15
+            ),  # Increased for Stage 3 processing with rate limiting
             memory_size=512,
             environment={
                 "DATA_BUCKET": data_bucket.bucket_name,
