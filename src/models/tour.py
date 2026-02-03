@@ -406,10 +406,35 @@ TOUR_STAGES: list[Stage] = [
                 route="Glyph Heights",
                 distance_km=19.3,
                 elevation_m=157,
-                option_letter="C",
+                option_letter="B",
                 zwiftinsider_url="https://zwiftinsider.com/route/glyph-heights/",
                 zwiftpower_search_url="https://zwiftpower.com/events.php?search=tour+de+zwift+stage+5",
-                penalty_events=DEFAULT_COURSE_PENALTY_EVENTS,
+                penalty_events=[
+                    PenaltyEvent(
+                        event_time_utc=time(17, 0),  # 5pm UTC
+                        day_of_week=0,  # Monday
+                        penalty_seconds=60,  # 1 minute
+                        description="Monday 5pm UTC - 1 min penalty",
+                    ),
+                    PenaltyEvent(
+                        event_time_utc=time(18, 0),  # 6pm UTC
+                        day_of_week=0,  # Monday
+                        penalty_seconds=60,  # 1 minute
+                        description="Monday 6pm UTC - 1 min penalty",
+                    ),
+                    PenaltyEvent(
+                        event_time_utc=time(17, 0),  # 5pm UTC
+                        day_of_week=1,  # Tuesday
+                        penalty_seconds=60,  # 1 minute
+                        description="Tuesday 5pm UTC - 1 min penalty",
+                    ),
+                    PenaltyEvent(
+                        event_time_utc=time(18, 0),  # 6pm UTC
+                        day_of_week=1,  # Tuesday
+                        penalty_seconds=60,  # 1 minute
+                        description="Tuesday 6pm UTC - 1 min penalty",
+                    ),
+                ],
             ),
         ],
         start_datetime=datetime(2026, 2, 2, 17, 0, tzinfo=UTC),
