@@ -24,7 +24,7 @@ def run_command(cmd: list[str], capture: bool = False, redact: bool = False) -> 
     so the plaintext value never reaches the debug log.
     """
     if redact:
-        logger.debug(f"Running: {' '.join(cmd[:2])} ... [args redacted, contains a secret]")
+        logger.debug("Running command with redacted arguments (contains sensitive data)")
     else:
         logger.debug(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=capture, text=True)
