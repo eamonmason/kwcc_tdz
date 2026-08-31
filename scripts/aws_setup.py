@@ -17,9 +17,16 @@ SECRET_NAME = "kwcc-tdz/zwiftpower-credentials-prod"
 REGION = "eu-west-1"
 
 
-def run_command(cmd: list[str], capture: bool = False) -> str | None:
-    """Run a shell command."""
-    logger.debug(f"Running: {' '.join(cmd)}")
+def run_command(cmd: list[str], capture: bool = False, redact: bool = False) -> str | None:
+    """Run a shell command.
+
+    Set redact=True when cmd embeds a secret value (e.g. --secret-string)
+    so the plaintext value never reaches the debug log.
+    """
+    if redact:
+        logger.debug(f"Running: {' '.join(cmd[:2])} ... [args redacted, contains a secret]")
+    else:
+        logger.debug(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=capture, text=True)
     if result.returncode != 0:
         if capture:
@@ -100,9 +107,10 @@ def configure_secret(secret_name: str, username: str, password: str):
             REGION,
         ],
         capture=True,
+        redact=True,
     )
     if result is not None:
-        logger.info(f"Configured credentials in {secret_name}")
+        logger.info("Configured ZwiftPower credentials in Secrets Manager")
         return True
     else:
         logger.error("Failed to configure credentials")
