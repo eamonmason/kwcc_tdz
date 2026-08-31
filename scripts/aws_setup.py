@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import boto3
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
@@ -17,16 +19,9 @@ SECRET_NAME = "kwcc-tdz/zwiftpower-credentials-prod"
 REGION = "eu-west-1"
 
 
-def run_command(cmd: list[str], capture: bool = False, redact: bool = False) -> str | None:
-    """Run a shell command.
-
-    Set redact=True when cmd embeds a secret value (e.g. --secret-string)
-    so the plaintext value never reaches the debug log.
-    """
-    if redact:
-        logger.debug("Running command with redacted arguments (contains sensitive data)")
-    else:
-        logger.debug(f"Running: {' '.join(cmd)}")
+def run_command(cmd: list[str], capture: bool = False) -> str | None:
+    """Run a shell command."""
+    logger.debug(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=capture, text=True)
     if result.returncode != 0:
         if capture:
@@ -92,29 +87,19 @@ def upload_event_ids(bucket: str, event_ids_file: Path):
 
 def configure_secret(secret_name: str, username: str, password: str):
     """Configure ZwiftPower credentials in Secrets Manager."""
+    # Uses boto3 directly rather than shelling out to the aws CLI: passing the
+    # credentials as a subprocess argv would put them in cleartext in the
+    # process list (ps/proc) as well as risk a debug log ever printing argv.
     secret_value = json.dumps({"username": username, "password": password})
-
-    result = run_command(
-        [
-            "aws",
-            "secretsmanager",
-            "put-secret-value",
-            "--secret-id",
-            secret_name,
-            "--secret-string",
-            secret_value,
-            "--region",
-            REGION,
-        ],
-        capture=True,
-        redact=True,
-    )
-    if result is not None:
-        logger.info("Configured ZwiftPower credentials in Secrets Manager")
-        return True
-    else:
-        logger.error("Failed to configure credentials")
+    try:
+        client = boto3.client("secretsmanager", region_name=REGION)
+        client.put_secret_value(SecretId=secret_name, SecretString=secret_value)
+    except Exception as e:
+        logger.error(f"Failed to configure credentials: {type(e).__name__}")
         return False
+
+    logger.info("Configured ZwiftPower credentials in Secrets Manager")
+    return True
 
 
 def trigger_lambda(function_name: str):
