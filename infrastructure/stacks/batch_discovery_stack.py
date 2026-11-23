@@ -66,8 +66,11 @@ class BatchDiscoveryStack(Stack):
                         "bash",
                         "-c",
                         # Runtime deps come from uv.lock; boto3 is pruned because
-                        # the Lambda runtime provides it.
-                        "pip install uv && "
+                        # the Lambda runtime provides it. CDK runs this as the
+                        # host's non-root user with HOME=/, so keep uv's cache
+                        # (and uv itself, if the image lacks it) under /tmp.
+                        "export UV_CACHE_DIR=/tmp/uv-cache PATH=/tmp/uv/bin:$PATH && "
+                        "{ command -v uv >/dev/null || pip install -q --target /tmp/uv uv; } && "
                         "uv export --frozen --no-dev --no-emit-project --no-hashes "
                         "--prune boto3 -o /tmp/requirements.txt && "
                         "pip install -r /tmp/requirements.txt -t /asset-output/python "
