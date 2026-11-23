@@ -67,6 +67,13 @@ jobs:
   deploy-prod:
     name: Deploy Production
     runs-on: ubuntu-latest
+    # One deploy at a time per environment: CloudFormation rejects a stack
+    # update while another is in progress (UPDATE_IN_PROGRESS), which broke a
+    # deploy when several Dependabot PRs merged a minute apart. A newer queued
+    # deploy replaces an older queued one; the running one is never cancelled.
+    concurrency:
+      group: kwcc-tdz-deploy-prod
+      cancel-in-progress: false
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -126,6 +133,13 @@ jobs:
   deploy-ci:
     name: Deploy CI Environment
     runs-on: ubuntu-latest
+    # One deploy at a time per environment: CloudFormation rejects a stack
+    # update while another is in progress (UPDATE_IN_PROGRESS), which broke a
+    # deploy when several Dependabot PRs merged a minute apart. A newer queued
+    # deploy replaces an older queued one; the running one is never cancelled.
+    concurrency:
+      group: kwcc-tdz-deploy-ci
+      cancel-in-progress: false
     needs: test
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     permissions:
