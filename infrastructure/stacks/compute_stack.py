@@ -71,7 +71,12 @@ class ComputeStack(Stack):
                     "command": [
                         "bash",
                         "-c",
-                        "pip install -r requirements-lambda.txt -t /asset-output/python "
+                        # Runtime deps come from uv.lock. boto3 and python-dotenv
+                        # are pruned: Lambda provides boto3, dotenv is local-only.
+                        "pip install uv && "
+                        "uv export --frozen --no-dev --no-emit-project --no-hashes "
+                        "--prune boto3 --prune python-dotenv -o /tmp/requirements.txt && "
+                        "pip install -r /tmp/requirements.txt -t /asset-output/python "
                         "--platform manylinux2014_x86_64 --only-binary=:all:",
                     ],
                 },
